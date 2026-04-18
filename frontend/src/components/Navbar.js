@@ -1,101 +1,170 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/editors');
-  };
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleLogout = () => { logout(); navigate('/editors'); };
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav style={{
-      background: '#fff', borderBottom: '1px solid #E2E8F0',
-      position: 'sticky', top: 0, zIndex: 100
+      background: scrolled ? 'rgba(255,255,255,0.92)' : '#fff',
+      backdropFilter: scrolled ? 'blur(20px)' : 'none',
+      borderBottom: '1px solid #E2E8F0',
+      position: 'sticky', top: 0, zIndex: 100,
+      transition: 'all 0.3s ease',
+      boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.08)' : 'none'
     }}>
       <div style={{
         maxWidth: 1140, margin: '0 auto', padding: '0 20px',
         display: 'flex', alignItems: 'center', height: 64
       }}>
+
+        {/* Logo */}
         <Link to="/" style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          textDecoration: 'none', marginRight: 32
+          display: 'flex', alignItems: 'center', gap: 10,
+          textDecoration: 'none', marginRight: 36
         }}>
           <div style={{
-            width: 32, height: 32, background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-            borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+            width: 36, height: 36,
+            background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+            borderRadius: 10, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(99,102,241,0.4)',
+            transition: 'transform 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'rotate(-5deg) scale(1.1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
               <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
             </svg>
           </div>
-          <span style={{ fontWeight: 800, fontSize: 18, color: '#0F172A' }}>EditHire</span>
+          <span style={{
+            fontWeight: 800, fontSize: 20, color: '#0F172A',
+            letterSpacing: '-0.5px'
+          }}>
+            Edit<span style={{ color: '#6366F1' }}>Hire</span>
+          </span>
         </Link>
 
-        <div style={{ display: 'flex', gap: 4, flex: 1 }}>
-          <Link to="/editors" style={{
-            padding: '6px 12px', borderRadius: 8, fontSize: 14,
-            fontWeight: 500, color: '#64748B', textDecoration: 'none'
-          }}>Browse Editors</Link>
-
-          {user && (
-            <>
-              <Link to="/dashboard" style={{
-                padding: '6px 12px', borderRadius: 8, fontSize: 14,
-                fontWeight: 500, color: '#64748B', textDecoration: 'none'
-              }}>Dashboard</Link>
-              <Link to="/messages" style={{
-                padding: '6px 12px', borderRadius: 8, fontSize: 14,
-                fontWeight: 500, color: '#64748B', textDecoration: 'none'
-              }}>Messages</Link>
-              {user?.role === 'editor' && (
-                <Link to="/portfolio" style={{
-                  padding: '6px 12px', borderRadius: 8, fontSize: 14,
-                  fontWeight: 500, color: '#64748B', textDecoration: 'none'
-                }}>My Portfolio</Link>
-              )}
-            </>
-          )}
+        {/* Nav Links */}
+        <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+          {[
+            { to: '/editors', label: 'Browse Editors', show: true },
+            { to: '/dashboard', label: 'Dashboard', show: !!user },
+            { to: '/messages', label: 'Messages', show: !!user },
+            { to: '/portfolio', label: 'My Portfolio', show: user?.role === 'editor' },
+          ].filter(i => i.show).map(item => (
+            <Link key={item.to} to={item.to} style={{
+              padding: '7px 14px', borderRadius: 10, fontSize: 14,
+              fontWeight: isActive(item.to) ? 700 : 500,
+              color: isActive(item.to) ? '#6366F1' : '#64748B',
+              background: isActive(item.to) ? '#EEF2FF' : 'transparent',
+              textDecoration: 'none', transition: 'all 0.2s',
+              position: 'relative'
+            }}
+              onMouseEnter={e => {
+                if (!isActive(item.to)) {
+                  e.currentTarget.style.color = '#6366F1';
+                  e.currentTarget.style.background = '#F5F3FF';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive(item.to)) {
+                  e.currentTarget.style.color = '#64748B';
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}>
+              {item.label}
+            </Link>
+          ))}
         </div>
 
-        {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '6px 12px', background: '#F8FAFC', borderRadius: 10
-            }}>
+        {/* Right Side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {user && <NotificationBell />}
+
+          {user ? (
+            <>
               <div style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: '#6366F1', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 600
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '6px 14px 6px 6px',
+                background: 'linear-gradient(135deg, #F5F3FF, #EEF2FF)',
+                borderRadius: 50, border: '1px solid #DDD6FE'
               }}>
-                {user.name?.slice(0, 2).toUpperCase()}
+                <div style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+                  color: '#fff', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: 11, fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(99,102,241,0.4)'
+                }}>
+                  {user.name?.slice(0, 2).toUpperCase()}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                  {user.name?.split(' ')[0]}
+                </span>
+                <span style={{
+                  fontSize: 10, background: '#6366F1', color: '#fff',
+                  padding: '2px 8px', borderRadius: 20,
+                  fontWeight: 700, textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>{user.role}</span>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                {user.name?.split(' ')[0]}
-              </span>
-              <span style={{
-                fontSize: 11, background: '#EEF2FF', color: '#6366F1',
-                padding: '2px 7px', borderRadius: 20, fontWeight: 700
-              }}>{user.role}</span>
-            </div>
-            <button onClick={handleLogout} style={{
-              padding: '7px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0',
-              background: '#fff', color: '#64748B', cursor: 'pointer',
-              fontSize: 13, fontWeight: 600
-            }}>Logout</button>
-          </div>
-        ) : (
-          <Link to="/login" style={{
-            padding: '9px 20px', borderRadius: 10,
-            background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-            color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 700
-          }}>Sign In</Link>
-        )}
+
+              <button onClick={handleLogout} style={{
+                padding: '8px 16px', borderRadius: 10,
+                border: '1.5px solid #E2E8F0', background: '#fff',
+                color: '#64748B', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600,
+                transition: 'all 0.2s', fontFamily: 'inherit'
+              }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = '#EF4444';
+                  e.currentTarget.style.color = '#EF4444';
+                  e.currentTarget.style.background = '#FEF2F2';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                  e.currentTarget.style.color = '#64748B';
+                  e.currentTarget.style.background = '#fff';
+                }}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link to="/login" style={{
+              padding: '9px 22px', borderRadius: 50,
+              background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+              color: '#fff', textDecoration: 'none',
+              fontSize: 14, fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(99,102,241,0.4)',
+              transition: 'all 0.2s'
+            }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(99,102,241,0.5)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.4)';
+              }}>
+              Sign In ✦
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

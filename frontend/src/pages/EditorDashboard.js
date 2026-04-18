@@ -8,6 +8,10 @@ const EditorDashboard = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleModal, setScheduleModal] = useState(null);
+  const [scheduleForm, setScheduleForm] = useState({
+    date: '', message: ''
+  });
 
   useEffect(() => {
     fetchRequests();
@@ -30,7 +34,30 @@ const EditorDashboard = () => {
       await API.patch(`/hire/${id}/status`, { status });
       fetchRequests();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error aaya');
+      alert(err.response?.data?.message || 'Error occurred');
+    }
+  };
+
+  const handleScheduleSubmit = async () => {
+    if (!scheduleForm.date) {
+      alert('Please select a date'); return;
+    }
+    try {
+      await API.post('/notifications/schedule', {
+        hiringRequestId: scheduleModal._id,
+        scheduledDate: scheduleForm.date,
+        message: scheduleForm.message ||
+          `I am currently busy but will be available on ${new Date(scheduleForm.date)
+            .toLocaleDateString('en-US', {
+              day: 'numeric', month: 'long', year: 'numeric'
+            })} for your project "${scheduleModal.projectTitle}". Would you like to proceed?`
+      });
+      setScheduleModal(null);
+      setScheduleForm({ date: '', message: '' });
+      fetchRequests();
+      alert('Schedule proposal sent to client successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error occurred');
     }
   };
 
@@ -39,7 +66,8 @@ const EditorDashboard = () => {
     accepted: { bg: '#EFF6FF', color: '#1D4ED8' },
     completed: { bg: '#F0FDF4', color: '#15803D' },
     rejected: { bg: '#FEF2F2', color: '#B91C1C' },
-    cancelled: { bg: '#F1F5F9', color: '#64748B' }
+    cancelled: { bg: '#F1F5F9', color: '#64748B' },
+    scheduled: { bg: '#F5F3FF', color: '#7C3AED' }
   };
 
   const stats = [
@@ -72,7 +100,7 @@ const EditorDashboard = () => {
           Editor Dashboard ✂️
         </h1>
         <p style={{ color: '#64748B', margin: 0 }}>
-          Apni requests manage karo, {user?.name?.split(' ')[0]}
+          Manage your requests, {user?.name?.split(' ')[0]}
         </p>
       </div>
 
@@ -97,7 +125,10 @@ const EditorDashboard = () => {
         ))}
       </div>
 
-      <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: '#0F172A' }}>
+      <h2 style={{
+        margin: '0 0 16px', fontSize: 18,
+        fontWeight: 700, color: '#0F172A'
+      }}>
         Hire Requests
       </h2>
 
@@ -112,13 +143,15 @@ const EditorDashboard = () => {
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : requests.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#94A3B8' }}>
+        <div style={{
+          textAlign: 'center', padding: '60px 0', color: '#94A3B8'
+        }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
           <div style={{ fontSize: 17, fontWeight: 600 }}>
-            Koi request nahi abhi tak
+            No requests yet
           </div>
           <div style={{ fontSize: 14, marginTop: 4 }}>
-            Jab koi client hire karega, yahan dikhega
+            When a client hires you, it will appear here
           </div>
         </div>
       ) : (
@@ -134,11 +167,13 @@ const EditorDashboard = () => {
                   display: 'flex', alignItems: 'flex-start',
                   gap: 14, flexWrap: 'wrap'
                 }}>
+
                   {/* Client Avatar */}
                   <div style={{
                     width: 46, height: 46, borderRadius: '50%',
                     background: '#0EA5E9', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'center',
                     fontWeight: 700, fontSize: 16, flexShrink: 0
                   }}>
                     {req.client?.name?.slice(0, 2).toUpperCase()}
@@ -158,13 +193,16 @@ const EditorDashboard = () => {
                       <span style={{
                         background: sc.bg, color: sc.color,
                         borderRadius: 20, padding: '3px 10px',
-                        fontSize: 11, fontWeight: 700, textTransform: 'capitalize'
+                        fontSize: 11, fontWeight: 700,
+                        textTransform: 'capitalize'
                       }}>{req.status}</span>
                     </div>
 
-                    <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>
+                    <div style={{
+                      fontSize: 13, color: '#94A3B8', marginTop: 2
+                    }}>
                       from {req.client?.name} ·{' '}
-                      {new Date(req.createdAt).toLocaleDateString('en-IN')}
+                      {new Date(req.createdAt).toLocaleDateString('en-US')}
                     </div>
 
                     <p style={{
@@ -173,6 +211,22 @@ const EditorDashboard = () => {
                     }}>
                       {req.description}
                     </p>
+
+                    {/* Scheduled Date */}
+                    {req.scheduledDate && (
+                      <div style={{
+                        marginTop: 10, display: 'inline-flex',
+                        alignItems: 'center', gap: 6,
+                        background: '#F5F3FF', color: '#7C3AED',
+                        borderRadius: 8, padding: '5px 12px',
+                        fontSize: 13, fontWeight: 600
+                      }}>
+                        📅 Scheduled for:{' '}
+                        {new Date(req.scheduledDate).toLocaleDateString('en-US', {
+                          day: 'numeric', month: 'long', year: 'numeric'
+                        })}
+                      </div>
+                    )}
 
                     {/* Skills */}
                     {req.skills?.length > 0 && (
@@ -199,8 +253,11 @@ const EditorDashboard = () => {
                       ${req.budget || 0}
                     </div>
                     {req.deadline && (
-                      <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
-                        Deadline: {new Date(req.deadline).toLocaleDateString('en-IN')}
+                      <div style={{
+                        fontSize: 12, color: '#94A3B8', marginTop: 4
+                      }}>
+                        Deadline:{' '}
+                        {new Date(req.deadline).toLocaleDateString('en-US')}
                       </div>
                     )}
                   </div>
@@ -212,6 +269,7 @@ const EditorDashboard = () => {
                   borderTop: '1px solid #F1F5F9',
                   display: 'flex', gap: 10, flexWrap: 'wrap'
                 }}>
+
                   {/* Message Button */}
                   <button
                     onClick={() => navigate(`/messages/${req.client?._id}`)}
@@ -237,11 +295,24 @@ const EditorDashboard = () => {
                         }}>
                         ✓ Accept
                       </button>
+
+                      {/* Schedule Button */}
+                      <button
+                        onClick={() => setScheduleModal(req)}
+                        style={{
+                          padding: '8px 20px', borderRadius: 8,
+                          border: 'none', background: '#7C3AED',
+                          color: '#fff', cursor: 'pointer',
+                          fontWeight: 700, fontSize: 13
+                        }}>
+                        📅 Propose Schedule
+                      </button>
+
                       <button
                         onClick={() => updateStatus(req._id, 'rejected')}
                         style={{
                           padding: '8px 20px', borderRadius: 8,
-                          border: '1.5px solid #FEE2E2',
+                          border: '1px solid #FEE2E2',
                           background: '#FEF2F2',
                           color: '#B91C1C', cursor: 'pointer',
                           fontWeight: 700, fontSize: 13
@@ -270,8 +341,155 @@ const EditorDashboard = () => {
           })}
         </div>
       )}
-    </div>
-  );
-};
 
-export default EditorDashboard;
+      {/* Schedule Modal */}
+      {scheduleModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.55)', zIndex: 1000,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', padding: 16
+        }}
+          onClick={e => e.target === e.currentTarget && setScheduleModal(null)}>
+          <div style={{
+            background: '#fff', borderRadius: 20,
+            width: '100%', maxWidth: 500,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            overflow: 'hidden'
+          }}>
+
+            {/* Modal Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #7C3AED, #6366F1)',
+              padding: '20px 24px',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <h2 style={{
+                  margin: 0, fontSize: 18,
+                  fontWeight: 700, color: '#fff'
+                }}>
+                  📅 Propose a Schedule
+                </h2>
+                <p style={{
+                  margin: '4px 0 0', fontSize: 13,
+                  color: 'rgba(255,255,255,0.8)'
+                }}>
+                  Tell the client when you will be available
+                </p>
+              </div>
+              <button
+                onClick={() => setScheduleModal(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 20, color: '#fff',
+                  width: 32, height: 32, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center'
+                }}>×</button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+
+              {/* Project Info */}
+              <div style={{
+                background: '#F8FAFC', borderRadius: 12,
+                padding: '12px 16px', marginBottom: 20
+              }}>
+                <div style={{
+                  fontSize: 12, color: '#94A3B8',
+                  fontWeight: 600, marginBottom: 4
+                }}>PROJECT</div>
+                <div style={{
+                  fontWeight: 700, fontSize: 15, color: '#0F172A'
+                }}>
+                  {scheduleModal.projectTitle}
+                </div>
+                <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                  from {scheduleModal.client?.name}
+                </div>
+              </div>
+
+              {/* Date Picker */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: '#374151', display: 'block', marginBottom: 6
+                }}>
+                  Available Date *
+                </label>
+                <input
+                  type="date"
+                  value={scheduleForm.date}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => setScheduleForm(f => ({
+                    ...f, date: e.target.value
+                  }))}
+                  style={{
+                    width: '100%', padding: '10px 14px',
+                    borderRadius: 10, border: '1.5px solid #E2E8F0',
+                    fontSize: 14, boxSizing: 'border-box', outline: 'none'
+                  }}
+                />
+              </div>
+
+              {/* Custom Message */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: '#374151', display: 'block', marginBottom: 6
+                }}>
+                  Message to Client (Optional)
+                </label>
+                <textarea
+                  value={scheduleForm.message}
+                  onChange={e => setScheduleForm(f => ({
+                    ...f, message: e.target.value
+                  }))}
+                  placeholder="e.g. I am currently working on another project but will be fully available from this date..."
+                  rows={4}
+                  style={{
+                    width: '100%', padding: '10px 14px',
+                    borderRadius: 10, border: '1.5px solid #E2E8F0',
+                    fontSize: 14, resize: 'vertical',
+                    boxSizing: 'border-box', outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                />
+                <div style={{
+                  fontSize: 12, color: '#94A3B8', marginTop: 4
+                }}>
+                  Leave empty to send a default message
+                </div>
+              </div>
+
+                            {/* Buttons */}
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <button
+                                onClick={() => setScheduleModal(null)}
+                                style={{
+                                  flex: 1, padding: '12px', borderRadius: 12,
+                                  border: '1.5px solid #E2E8F0', background: '#fff',
+                                  color: '#374151', cursor: 'pointer',
+                                  fontWeight: 600, fontSize: 14
+                                }}>Cancel</button>
+                              <button
+                                onClick={handleScheduleSubmit}
+                                style={{
+                                  flex: 1, padding: '12px', borderRadius: 12,
+                                  border: 'none', background: '#6366F1',
+                                  color: '#fff', cursor: 'pointer',
+                                  fontWeight: 600, fontSize: 14
+                                }}>Send Proposal</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+              
+              export default EditorDashboard;
