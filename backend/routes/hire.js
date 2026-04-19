@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const HiringRequest = require('../models/HiringRequest');
-const EditorProfile = require('../models/Editorprofile');
+const EditorProfile = require('../models/EditorProfile');
 const { auth, requireRole } = require('../middleware/auth');
 
 // POST /api/hire - Client sends hire request

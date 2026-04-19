@@ -2,7 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const EditorProfile = require('../models/Editorprofile');
+const EditorProfile = require('../models/EditorProfile');
 const HiringRequest = require('../models/HiringRequest');
 const Review = require('../models/Review');
 

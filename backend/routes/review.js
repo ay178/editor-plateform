@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Review = require('../models/Review');
 const HiringRequest = require('../models/HiringRequest');
-const EditorProfile = require('../models/Editorprofile');
+const EditorProfile = require('../models/EditorProfile');
 const { auth, requireRole } = require('../middleware/auth');
 
 // POST /api/review - Client leaves a review

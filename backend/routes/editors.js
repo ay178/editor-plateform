@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const EditorProfile = require('../models/Editorprofile');
+const EditorProfile = require('../models/EditorProfile');
 const User = require('../models/User');
 const Review = require('../models/Review');
 const { auth, requireRole } = require('../middleware/auth');
