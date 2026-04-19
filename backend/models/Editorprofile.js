@@ -1,11 +1,19 @@
 const mongoose = require('mongoose');
 
 const editorProfileSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true, 
+    unique: true 
+  },
   bio: { type: String, default: '' },
   skills: [{
     type: String,
-    enum: ['video-editing', 'photo-editing', 'thumbnail-design', 'color-grading', 'motion-graphics', 'sound-design', 'animation']
+    enum: [
+      'video-editing', 'photo-editing', 'thumbnail-design',
+      'color-grading', 'motion-graphics', 'sound-design', 'animation'
+    ]
   }],
   portfolio: [{
     title: String,
@@ -13,7 +21,11 @@ const editorProfileSchema = new mongoose.Schema({
     type: { type: String, enum: ['image', 'video', 'link'] },
     thumbnail: String
   }],
-  pricingType: { type: String, enum: ['hourly', 'per-project'], default: 'per-project' },
+  pricingType: { 
+    type: String, 
+    enum: ['hourly', 'per-project'], 
+    default: 'per-project' 
+  },
   price: { type: Number, default: 0 },
   currency: { type: String, default: 'USD' },
   availability: { type: Boolean, default: true },
@@ -27,4 +39,5 @@ const editorProfileSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('EditorProfile', editorProfileSchema);
+module.exports = mongoose.models.EditorProfile || 
+  mongoose.model('EditorProfile', editorProfileSchema);

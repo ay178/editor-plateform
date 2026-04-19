@@ -3,43 +3,60 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
-const fs = require('fs');
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
 const { Server } = require('socket.io');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_URL || 'http://localhost:3000', methods: ['GET', 'POST'] }
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
 });
 
-// Middleware
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000' }));
+// ── Create uploads folder if not exists ──
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
+// ── Middleware ──
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000'
+}));
 app.use(express.json());
 
-// Routes
+// ── Static files ──
+app.use('/uploads', express.static('uploads'));
+
+// ── Routes ──
 app.use('/api', require('./routes/auth'));
 app.use('/api/editors', require('./routes/editors'));
 app.use('/api/hire', require('./routes/hire'));
 app.use('/api/review', require('./routes/review'));
-app.use('/api/upload', require('./routes/upload'));
-app.use('/uploads', express.static('uploads'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/ai', require('./routes/ai'));
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
+// ── Health Check ──
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date() });
+});
 
-// Socket.IO for real-time chat
+// ── Socket.IO — Real-time ──
 const onlineUsers = new Map();
+const collaborationRooms = new Map();
 
 io.on('connection', (socket) => {
+
+  // User joins
   socket.on('user:join', (userId) => {
     onlineUsers.set(userId, socket.id);
     io.emit('users:online', Array.from(onlineUsers.keys()));
   });
 
+  // Chat message
   socket.on('message:send', (data) => {
     const receiverSocketId = onlineUsers.get(data.receiverId);
     if (receiverSocketId) {
@@ -47,6 +64,92 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── Collaboration Room ──
+  socket.on('collab:join', ({ roomId, userId, userName }) => {
+    socket.join(roomId);
+
+    if (!collaborationRooms.has(roomId)) {
+      collaborationRooms.set(roomId, {
+        users: [],
+        content: '',
+        comments: [],
+        timeline: []
+      });
+    }
+
+    const room = collaborationRooms.get(roomId);
+
+    // Add user to room
+    const existing = room.users.find(u => u.userId === userId);
+    if (!existing) {
+      room.users.push({ userId, userName, socketId: socket.id });
+    }
+
+    // Send current room state to new user
+    socket.emit('collab:state', room);
+
+    // Notify others
+    socket.to(roomId).emit('collab:user-joined', {
+      userId, userName
+    });
+
+    // Send updated user list to all
+    io.to(roomId).emit('collab:users', room.users);
+  });
+
+  // Content update (notes, script etc)
+  socket.on('collab:content-update', ({ roomId, content, userId }) => {
+    if (collaborationRooms.has(roomId)) {
+      collaborationRooms.get(roomId).content = content;
+    }
+    socket.to(roomId).emit('collab:content-updated', {
+      content, userId
+    });
+  });
+
+  // Add comment
+  socket.on('collab:add-comment', ({ roomId, comment }) => {
+    if (collaborationRooms.has(roomId)) {
+      const room = collaborationRooms.get(roomId);
+      const newComment = {
+        id: Date.now(),
+        ...comment,
+        timestamp: new Date()
+      };
+      room.comments.push(newComment);
+      io.to(roomId).emit('collab:comment-added', newComment);
+    }
+  });
+
+  // Timeline marker
+  socket.on('collab:timeline-marker', ({ roomId, marker }) => {
+    if (collaborationRooms.has(roomId)) {
+      const room = collaborationRooms.get(roomId);
+      const newMarker = { id: Date.now(), ...marker };
+      room.timeline.push(newMarker);
+      io.to(roomId).emit('collab:marker-added', newMarker);
+    }
+  });
+
+  // Cursor position (live cursors)
+  socket.on('collab:cursor', ({ roomId, userId, userName, position }) => {
+    socket.to(roomId).emit('collab:cursor-update', {
+      userId, userName, position
+    });
+  });
+
+  // Leave collaboration
+  socket.on('collab:leave', ({ roomId, userId }) => {
+    socket.leave(roomId);
+    if (collaborationRooms.has(roomId)) {
+      const room = collaborationRooms.get(roomId);
+      room.users = room.users.filter(u => u.userId !== userId);
+      io.to(roomId).emit('collab:users', room.users);
+      socket.to(roomId).emit('collab:user-left', { userId });
+    }
+  });
+
+  // Disconnect
   socket.on('disconnect', () => {
     for (const [userId, socketId] of onlineUsers.entries()) {
       if (socketId === socket.id) {
@@ -55,10 +158,23 @@ io.on('connection', (socket) => {
       }
     }
     io.emit('users:online', Array.from(onlineUsers.keys()));
+
+    // Remove from all collab rooms
+    for (const [roomId, room] of collaborationRooms.entries()) {
+      const userIndex = room.users.findIndex(
+        u => u.socketId === socket.id
+      );
+      if (userIndex !== -1) {
+        const userId = room.users[userIndex].userId;
+        room.users.splice(userIndex, 1);
+        io.to(roomId).emit('collab:users', room.users);
+        io.to(roomId).emit('collab:user-left', { userId });
+      }
+    }
   });
 });
 
-// DB + Server start
+// ── MongoDB + Server Start ──
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
@@ -66,4 +182,7 @@ mongoose.connect(process.env.MONGODB_URI)
       console.log(`🚀 Server running on port ${process.env.PORT || 5000}`);
     });
   })
-  .catch(err => { console.error('MongoDB connection error:', err); process.exit(1); });
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });

@@ -57,4 +57,5 @@ hiringRequestSchema.pre('save', function (next) {
   next();
 });
 
-module.exports = mongoose.model('HiringRequest', hiringRequestSchema);
+module.exports = mongoose.models.HiringRequest || 
+  mongoose.model('HiringRequest', hiringRequestSchema);

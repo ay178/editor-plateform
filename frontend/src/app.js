@@ -9,12 +9,20 @@ import ClientDashboard from './pages/ClientDashboard';
 import EditorDashboard from './pages/EditorDashboard';
 import Messages from './pages/Messages';
 import EditorPortfolio from './pages/EditorPortfolio';
+import AIMatch from './pages/AIMatch';
+import SmartPricing from './pages/SmartPricing';
+import VideoScorer from './pages/VideoScorer';
+import Collaboration from './pages/Collaboration';
 import Navbar from './components/Navbar';
 import './index.css';
 
 const PrivateRoute = ({ children, role }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  if (loading) return (
+    <div className="loading-screen">
+      <div className="spinner" />
+    </div>
+  );
   if (!user) return <Navigate to="/login" />;
   if (role && user.role !== role) return <Navigate to="/" />;
   return children;
@@ -26,23 +34,61 @@ const AppRoutes = () => {
     <>
       <Navbar />
       <Routes>
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/editors" element={<BrowseEditors />} />
         <Route path="/editors/:id" element={<EditorProfile />} />
+
+        {/* Client Routes */}
         <Route path="/dashboard" element={
           <PrivateRoute>
-            {user?.role === 'editor' ? <EditorDashboard /> : <ClientDashboard />}
+            {user?.role === 'editor'
+              ? <EditorDashboard />
+              : <ClientDashboard />}
           </PrivateRoute>
         } />
-        <Route path="/messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
-        <Route path="/messages/:userId" element={<PrivateRoute><Messages /></PrivateRoute>} />
+        <Route path="/ai-match" element={
+          <PrivateRoute role="client">
+            <AIMatch />
+          </PrivateRoute>
+        } />
+
+        {/* Editor Routes */}
         <Route path="/portfolio" element={
-  <PrivateRoute role="editor">
-    <EditorPortfolio />
-  </PrivateRoute>
-} />
-        <Route path="/" element={<Navigate to={user ? '/dashboard' : '/editors'} />} />
+          <PrivateRoute role="editor">
+            <EditorPortfolio />
+          </PrivateRoute>
+        } />
+        <Route path="/smart-pricing" element={
+          <PrivateRoute role="editor">
+            <SmartPricing />
+          </PrivateRoute>
+        } />
+        <Route path="/video-scorer" element={
+          <PrivateRoute role="editor">
+            <VideoScorer />
+          </PrivateRoute>
+        } />
+
+        {/* Shared Routes */}
+        <Route path="/messages" element={
+          <PrivateRoute><Messages /></PrivateRoute>
+        } />
+        <Route path="/messages/:userId" element={
+          <PrivateRoute><Messages /></PrivateRoute>
+        } />
+        <Route path="/collaboration" element={
+          <PrivateRoute><Collaboration /></PrivateRoute>
+        } />
+        <Route path="/collaboration/:roomId" element={
+          <PrivateRoute><Collaboration /></PrivateRoute>
+        } />
+
+        {/* Default */}
+        <Route path="/" element={
+          <Navigate to={user ? '/dashboard' : '/editors'} />
+        } />
       </Routes>
     </>
   );

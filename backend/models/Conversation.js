@@ -14,4 +14,5 @@ const conversationSchema = new mongoose.Schema({
   lastMessage: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Conversation', conversationSchema);
+module.exports = mongoose.models.Conversation || 
+  mongoose.model('Conversation', conversationSchema);
