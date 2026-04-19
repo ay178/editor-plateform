@@ -38,13 +38,14 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/payment', require('./routes/payment'));
 
 // ── Health Check ──
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date() });
 });
 
-// ── Socket.IO — Real-time ──
+// ── Socket.IO ──
 const onlineUsers = new Map();
 const collaborationRooms = new Map();
 
@@ -79,35 +80,23 @@ io.on('connection', (socket) => {
 
     const room = collaborationRooms.get(roomId);
 
-    // Add user to room
     const existing = room.users.find(u => u.userId === userId);
     if (!existing) {
       room.users.push({ userId, userName, socketId: socket.id });
     }
 
-    // Send current room state to new user
     socket.emit('collab:state', room);
-
-    // Notify others
-    socket.to(roomId).emit('collab:user-joined', {
-      userId, userName
-    });
-
-    // Send updated user list to all
+    socket.to(roomId).emit('collab:user-joined', { userId, userName });
     io.to(roomId).emit('collab:users', room.users);
   });
 
-  // Content update (notes, script etc)
   socket.on('collab:content-update', ({ roomId, content, userId }) => {
     if (collaborationRooms.has(roomId)) {
       collaborationRooms.get(roomId).content = content;
     }
-    socket.to(roomId).emit('collab:content-updated', {
-      content, userId
-    });
+    socket.to(roomId).emit('collab:content-updated', { content, userId });
   });
 
-  // Add comment
   socket.on('collab:add-comment', ({ roomId, comment }) => {
     if (collaborationRooms.has(roomId)) {
       const room = collaborationRooms.get(roomId);
@@ -121,7 +110,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Timeline marker
   socket.on('collab:timeline-marker', ({ roomId, marker }) => {
     if (collaborationRooms.has(roomId)) {
       const room = collaborationRooms.get(roomId);
@@ -131,14 +119,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Cursor position (live cursors)
   socket.on('collab:cursor', ({ roomId, userId, userName, position }) => {
     socket.to(roomId).emit('collab:cursor-update', {
       userId, userName, position
     });
   });
 
-  // Leave collaboration
   socket.on('collab:leave', ({ roomId, userId }) => {
     socket.leave(roomId);
     if (collaborationRooms.has(roomId)) {
@@ -149,7 +135,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Disconnect
   socket.on('disconnect', () => {
     for (const [userId, socketId] of onlineUsers.entries()) {
       if (socketId === socket.id) {
@@ -159,7 +144,6 @@ io.on('connection', (socket) => {
     }
     io.emit('users:online', Array.from(onlineUsers.keys()));
 
-    // Remove from all collab rooms
     for (const [roomId, room] of collaborationRooms.entries()) {
       const userIndex = room.users.findIndex(
         u => u.socketId === socket.id

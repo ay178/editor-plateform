@@ -23,11 +23,12 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
 
   const clientLinks = [
-    { to: '/editors', label: '🔍 Browse Editors' },
+    { to: '/editors', label: '🔍 Browse' },
     { to: '/ai-match', label: '🤖 AI Match' },
     { to: '/dashboard', label: '📊 Dashboard' },
     { to: '/messages', label: '💬 Messages' },
     { to: '/collaboration', label: '🎬 Collaborate' },
+    { to: '/wallet', label: '💳 Wallet' },
   ];
 
   const editorLinks = [
@@ -35,9 +36,10 @@ const Navbar = () => {
     { to: '/dashboard', label: '📊 Dashboard' },
     { to: '/portfolio', label: '🎞️ Portfolio' },
     { to: '/smart-pricing', label: '💰 Pricing' },
-    { to: '/video-scorer', label: '⭐ Score Video' },
+    { to: '/video-scorer', label: '⭐ Score' },
     { to: '/messages', label: '💬 Messages' },
     { to: '/collaboration', label: '🎬 Collaborate' },
+    { to: '/wallet', label: '💳 Wallet' },
   ];
 
   const guestLinks = [
@@ -66,7 +68,7 @@ const Navbar = () => {
         <Link to="/" style={{
           display: 'flex', alignItems: 'center',
           gap: 10, textDecoration: 'none',
-          marginRight: 28, flexShrink: 0
+          marginRight: 20, flexShrink: 0
         }}>
           <div style={{
             width: 36, height: 36,
@@ -101,7 +103,7 @@ const Navbar = () => {
         }}>
           {links.map(item => (
             <Link key={item.to} to={item.to} style={{
-              padding: '7px 12px', borderRadius: 10,
+              padding: '7px 10px', borderRadius: 10,
               fontSize: 13, whiteSpace: 'nowrap',
               fontWeight: isActive(item.to) ? 700 : 500,
               color: isActive(item.to) ? '#6366F1' : '#64748B',

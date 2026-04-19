@@ -13,6 +13,7 @@ import AIMatch from './pages/AIMatch';
 import SmartPricing from './pages/SmartPricing';
 import VideoScorer from './pages/VideoScorer';
 import Collaboration from './pages/Collaboration';
+import Wallet from './pages/Wallet';
 import Navbar from './components/Navbar';
 import './index.css';
 
@@ -34,13 +35,14 @@ const AppRoutes = () => {
     <>
       <Navbar />
       <Routes>
+
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/editors" element={<BrowseEditors />} />
         <Route path="/editors/:id" element={<EditorProfile />} />
 
-        {/* Client Routes */}
+        {/* Dashboard */}
         <Route path="/dashboard" element={
           <PrivateRoute>
             {user?.role === 'editor'
@@ -48,13 +50,15 @@ const AppRoutes = () => {
               : <ClientDashboard />}
           </PrivateRoute>
         } />
+
+        {/* Client Only */}
         <Route path="/ai-match" element={
           <PrivateRoute role="client">
             <AIMatch />
           </PrivateRoute>
         } />
 
-        {/* Editor Routes */}
+        {/* Editor Only */}
         <Route path="/portfolio" element={
           <PrivateRoute role="editor">
             <EditorPortfolio />
@@ -72,6 +76,11 @@ const AppRoutes = () => {
         } />
 
         {/* Shared Routes */}
+        <Route path="/wallet" element={
+          <PrivateRoute>
+            <Wallet />
+          </PrivateRoute>
+        } />
         <Route path="/messages" element={
           <PrivateRoute><Messages /></PrivateRoute>
         } />
@@ -89,6 +98,7 @@ const AppRoutes = () => {
         <Route path="/" element={
           <Navigate to={user ? '/dashboard' : '/editors'} />
         } />
+
       </Routes>
     </>
   );
