@@ -282,3 +282,36 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.08);
   animation: float 4s ease-in-out infinite;
 }
+/* ── Mobile Responsive ── */
+@media (max-width: 768px) {
+
+  /* Navbar */
+  nav > div {
+    padding: 0 12px !important;
+    height: 56px !important;
+  }
+
+  /* Hide text in logo */
+  nav span[style*="fontSize: 20"] {
+    display: none;
+  }
+
+  /* Page padding */
+  div[style*="maxWidth: 1000"],
+  div[style*="maxWidth: 1140"],
+  div[style*="maxWidth: 900"],
+  div[style*="maxWidth: 860"],
+  div[style*="maxWidth: 800"] {
+    padding: 16px 12px !important;
+  }
+
+  /* Grid to single column */
+  div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Flex wrap */
+  div[style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+}
