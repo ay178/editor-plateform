@@ -30,6 +30,8 @@ const paymentSchema = new mongoose.Schema({
     ],
     default: 'pending'
   },
+  razorpayOrderId: { type: String },
+  razorpayPaymentId: { type: String },
   advancePaidAt: { type: Date },
   completedAt: { type: Date },
   createdAt: { type: Date, default: Date.now }

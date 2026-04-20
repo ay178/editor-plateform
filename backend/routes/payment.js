@@ -1,10 +1,18 @@
 const express = require('express');
 const router = express.Router();
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const Payment = require('../models/Payment');
 const Wallet = require('../models/Wallet');
 const HiringRequest = require('../models/HiringRequest');
 const Notification = require('../models/Notification');
 const { auth, requireRole } = require('../middleware/auth');
+
+// Razorpay instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 // Helper — Get or create wallet
 const getWallet = async (userId) => {
@@ -15,7 +23,7 @@ const getWallet = async (userId) => {
   return wallet;
 };
 
-// GET /api/payment/wallet - Get my wallet
+// GET /api/payment/wallet
 router.get('/wallet', auth, async (req, res) => {
   try {
     const wallet = await getWallet(req.user._id);
@@ -25,34 +33,63 @@ router.get('/wallet', auth, async (req, res) => {
   }
 });
 
-// POST /api/payment/add-funds - Add funds to wallet
-router.post('/add-funds', auth, async (req, res) => {
+// POST /api/payment/create-order - Create Razorpay order
+router.post('/create-order', auth, async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, currency = 'INR', hiringRequestId } = req.body;
+
     if (!amount || amount <= 0) {
       return res.status(400).json({ message: 'Invalid amount' });
     }
 
-    const wallet = await getWallet(req.user._id);
-    wallet.balance += Number(amount);
-    wallet.transactions.push({
-      type: 'deposit',
-      amount: Number(amount),
-      description: `Added $${amount} to wallet`,
-      status: 'completed'
+    // Amount in paise (1 INR = 100 paise)
+    const amountInPaise = Math.round(amount * 100);
+
+    const order = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency,
+      receipt: `receipt_${Date.now()}`,
+      notes: {
+        hiringRequestId: hiringRequestId || '',
+        userId: req.user._id.toString()
+      }
     });
-    await wallet.save();
-    res.json({ wallet, message: `$${amount} added successfully` });
+
+    res.json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key: process.env.RAZORPAY_KEY_ID
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// POST /api/payment/pay-advance - Client pays 50% advance
-router.post('/pay-advance', auth, requireRole('client'), async (req, res) => {
+// POST /api/payment/verify - Verify Razorpay payment
+router.post('/verify', auth, async (req, res) => {
   try {
-    const { hiringRequestId } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      hiringRequestId,
+      amount,
+      paymentType
+    } = req.body;
 
+    // Verify signature
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ message: 'Payment verification failed' });
+    }
+
+    // Payment verified — now process
     const request = await HiringRequest.findById(hiringRequestId)
       .populate('client editor', 'name email');
 
@@ -60,202 +97,126 @@ router.post('/pay-advance', auth, requireRole('client'), async (req, res) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    if (request.client._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    if (request.paymentStatus !== 'unpaid') {
-      return res.status(400).json({ message: 'Payment already made' });
-    }
-
-    if (!request.budget) {
-      return res.status(400).json({ message: 'No budget set for this project' });
-    }
-
-    // Calculate amounts
     const totalAmount = request.budget;
     const advanceAmount = Math.round(totalAmount * 0.5);
-    const platformFee = Math.round(advanceAmount * 0.5);
+    const platformFee = Math.round(advanceAmount * 0.25);
     const editorAdvance = advanceAmount - platformFee;
     const remainingAmount = totalAmount - advanceAmount;
 
-    // Check client wallet balance
-    const clientWallet = await getWallet(req.user._id);
-    if (clientWallet.balance < advanceAmount) {
-      return res.status(400).json({
-        message: `Insufficient balance. You need $${advanceAmount} but have $${clientWallet.balance}`,
-        required: advanceAmount,
-        available: clientWallet.balance
-      });
-    }
-
-    // Deduct from client wallet
-    clientWallet.balance -= advanceAmount;
-    clientWallet.totalSpent += advanceAmount;
-    clientWallet.transactions.push({
-      type: 'escrow_hold',
-      amount: advanceAmount,
-      description: `Advance payment for "${request.projectTitle}"`,
-      hiringRequest: hiringRequestId,
-      status: 'completed'
-    });
-    await clientWallet.save();
-
-    // Add platform fee to platform wallet (escrow)
-    const platformFeeRecord = Math.round(advanceAmount * 0.25);
-
-    // Add advance to editor wallet (locked in escrow)
-    const editorWallet = await getWallet(request.editor._id);
-    editorWallet.escrowBalance += editorAdvance;
-    editorWallet.transactions.push({
-      type: 'escrow_hold',
-      amount: editorAdvance,
-      description: `Advance received for "${request.projectTitle}" (in escrow)`,
-      hiringRequest: hiringRequestId,
-      status: 'completed'
-    });
-    await editorWallet.save();
-
-    // Create payment record
-    const payment = await Payment.create({
-      client: req.user._id,
-      editor: request.editor._id,
-      hiringRequest: hiringRequestId,
-      totalAmount,
-      advanceAmount,
-      platformFee,
-      editorAdvance,
-      remainingAmount,
-      status: 'advance_paid',
-      advancePaidAt: new Date()
-    });
-
-    // Update hiring request
-    request.payment = payment._id;
-    request.paymentStatus = 'advance_paid';
-    request.status = 'accepted';
-    await request.save();
-
-    // Notify editor
-    await Notification.create({
-      recipient: request.editor._id,
-      sender: req.user._id,
-      hiringRequest: hiringRequestId,
-      type: 'hire_request',
-      message: `${request.client.name} paid $${advanceAmount} advance for "${request.projectTitle}". $${editorAdvance} is held in escrow for you.`
-    });
-
-    res.json({
-      payment,
-      message: 'Advance payment successful!',
-      breakdown: {
-        totalBudget: totalAmount,
-        advancePaid: advanceAmount,
+    if (paymentType === 'advance') {
+      // Create payment record
+      const payment = await Payment.create({
+        client: req.user._id,
+        editor: request.editor._id,
+        hiringRequest: hiringRequestId,
+        totalAmount,
+        advanceAmount,
         platformFee,
-        editorEscrow: editorAdvance,
-        remainingDue: remainingAmount
+        editorAdvance,
+        remainingAmount,
+        status: 'advance_paid',
+        advancePaidAt: new Date(),
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id
+      });
+
+      // Add to editor escrow wallet
+      const editorWallet = await getWallet(request.editor._id);
+      editorWallet.escrowBalance += editorAdvance;
+      editorWallet.transactions.push({
+        type: 'escrow_hold',
+        amount: editorAdvance,
+        description: `Advance received for "${request.projectTitle}" (in escrow)`,
+        hiringRequest: hiringRequestId,
+        status: 'completed'
+      });
+      await editorWallet.save();
+
+      // Update hiring request
+      request.payment = payment._id;
+      request.paymentStatus = 'advance_paid';
+      request.status = 'accepted';
+      await request.save();
+
+      // Notify editor
+      await Notification.create({
+        recipient: request.editor._id,
+        sender: req.user._id,
+        hiringRequest: hiringRequestId,
+        type: 'hire_request',
+        message: `${request.client.name} paid ₹${advanceAmount} advance for "${request.projectTitle}". ₹${editorAdvance} is held in escrow for you.`
+      });
+
+      res.json({
+        success: true,
+        message: 'Advance payment successful!',
+        payment,
+        breakdown: {
+          totalBudget: totalAmount,
+          advancePaid: advanceAmount,
+          platformFee,
+          editorEscrow: editorAdvance,
+          remainingDue: remainingAmount
+        }
+      });
+
+    } else if (paymentType === 'final') {
+      // Final payment
+      const payment = await Payment.findById(request.payment);
+      if (!payment) {
+        return res.status(404).json({ message: 'Payment record not found' });
       }
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 
-// POST /api/payment/complete - Client pays remaining + release escrow
-router.post('/complete', auth, requireRole('client'), async (req, res) => {
-  try {
-    const { hiringRequestId } = req.body;
+      const remainingPlatformFee = Math.round(remainingAmount * 0.25);
+      const remainingEditorAmount = remainingAmount - remainingPlatformFee;
+      const totalEditorAmount = payment.editorAdvance + remainingEditorAmount;
 
-    const request = await HiringRequest.findById(hiringRequestId)
-      .populate('client editor', 'name email');
+      // Release escrow + add to editor wallet
+      const editorWallet = await getWallet(request.editor._id);
+      editorWallet.escrowBalance -= payment.editorAdvance;
+      editorWallet.balance += totalEditorAmount;
+      editorWallet.totalEarned += totalEditorAmount;
+      editorWallet.transactions.push({
+        type: 'escrow_release',
+        amount: totalEditorAmount,
+        description: `Full payment released for "${request.projectTitle}"`,
+        hiringRequest: hiringRequestId,
+        status: 'completed'
+      });
+      await editorWallet.save();
 
-    if (!request) {
-      return res.status(404).json({ message: 'Request not found' });
-    }
+      // Update payment
+      payment.status = 'completed';
+      payment.completedAt = new Date();
+      await payment.save();
 
-    if (request.client._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
+      // Update request
+      request.paymentStatus = 'completed';
+      request.status = 'completed';
+      await request.save();
 
-    if (request.paymentStatus !== 'advance_paid') {
-      return res.status(400).json({ message: 'Advance not paid yet' });
-    }
+      // Notify editor
+      await Notification.create({
+        recipient: request.editor._id,
+        sender: req.user._id,
+        hiringRequest: hiringRequestId,
+        type: 'request_completed',
+        message: `Project "${request.projectTitle}" completed! ₹${totalEditorAmount} has been released to your wallet.`
+      });
 
-    const payment = await Payment.findById(request.payment);
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment record not found' });
-    }
-
-    const remainingAmount = payment.remainingAmount;
-    const remainingPlatformFee = Math.round(remainingAmount * 0.25);
-    const remainingEditorAmount = remainingAmount - remainingPlatformFee;
-
-    // Check client wallet
-    const clientWallet = await getWallet(req.user._id);
-    if (clientWallet.balance < remainingAmount) {
-      return res.status(400).json({
-        message: `Insufficient balance. You need $${remainingAmount} but have $${clientWallet.balance}`,
-        required: remainingAmount,
-        available: clientWallet.balance
+      res.json({
+        success: true,
+        message: 'Final payment successful! Project completed.',
+        editorReceived: totalEditorAmount
       });
     }
 
-    // Deduct remaining from client
-    clientWallet.balance -= remainingAmount;
-    clientWallet.totalSpent += remainingAmount;
-    clientWallet.transactions.push({
-      type: 'escrow_release',
-      amount: remainingAmount,
-      description: `Final payment for "${request.projectTitle}"`,
-      hiringRequest: hiringRequestId,
-      status: 'completed'
-    });
-    await clientWallet.save();
-
-    // Release escrow + add remaining to editor
-    const editorWallet = await getWallet(request.editor._id);
-    const totalEditorAmount = payment.editorAdvance + remainingEditorAmount;
-    editorWallet.escrowBalance -= payment.editorAdvance;
-    editorWallet.balance += totalEditorAmount;
-    editorWallet.totalEarned += totalEditorAmount;
-    editorWallet.transactions.push({
-      type: 'escrow_release',
-      amount: totalEditorAmount,
-      description: `Full payment released for "${request.projectTitle}"`,
-      hiringRequest: hiringRequestId,
-      status: 'completed'
-    });
-    await editorWallet.save();
-
-    // Update payment
-    payment.status = 'completed';
-    payment.completedAt = new Date();
-    await payment.save();
-
-    // Update request
-    request.paymentStatus = 'completed';
-    request.status = 'completed';
-    await request.save();
-
-    // Notify editor
-    await Notification.create({
-      recipient: request.editor._id,
-      sender: req.user._id,
-      hiringRequest: hiringRequestId,
-      type: 'request_completed',
-      message: `Project "${request.projectTitle}" completed! $${totalEditorAmount} has been released to your wallet.`
-    });
-
-    res.json({
-      message: 'Payment completed! Funds released to editor.',
-      editorReceived: totalEditorAmount
-    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET /api/payment/history - Get payment history
+// GET /api/payment/history
 router.get('/history', auth, async (req, res) => {
   try {
     const query = req.user.role === 'client'
@@ -273,7 +234,7 @@ router.get('/history', auth, async (req, res) => {
   }
 });
 
-// POST /api/payment/withdraw - Editor withdraws from wallet
+// POST /api/payment/withdraw - Editor withdraws
 router.post('/withdraw', auth, requireRole('editor'), async (req, res) => {
   try {
     const { amount } = req.body;
@@ -281,7 +242,7 @@ router.post('/withdraw', auth, requireRole('editor'), async (req, res) => {
 
     if (wallet.balance < amount) {
       return res.status(400).json({
-        message: `Insufficient balance. Available: $${wallet.balance}`
+        message: `Insufficient balance. Available: ₹${wallet.balance}`
       });
     }
 
@@ -289,14 +250,14 @@ router.post('/withdraw', auth, requireRole('editor'), async (req, res) => {
     wallet.transactions.push({
       type: 'withdrawal',
       amount,
-      description: `Withdrawal of $${amount}`,
+      description: `Withdrawal of ₹${amount}`,
       status: 'completed'
     });
     await wallet.save();
 
     res.json({
       wallet,
-      message: `$${amount} withdrawal successful`
+      message: `₹${amount} withdrawal successful`
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
