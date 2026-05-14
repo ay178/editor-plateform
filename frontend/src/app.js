@@ -15,6 +15,7 @@ import VideoScorer from './pages/VideoScorer';
 import Collaboration from './pages/Collaboration';
 import Wallet from './pages/Wallet';
 import Navbar from './components/Navbar';
+import Cursor from './components/Cursor';
 import './index.css';
 
 const PrivateRoute = ({ children, role }) => {
@@ -33,73 +34,53 @@ const AppRoutes = () => {
   const { user } = useAuth();
   return (
     <>
+      <Cursor />
       <Navbar />
-      <Routes>
-
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/editors" element={<BrowseEditors />} />
-        <Route path="/editors/:id" element={<EditorProfile />} />
-
-        {/* Dashboard */}
-        <Route path="/dashboard" element={
-          <PrivateRoute>
-            {user?.role === 'editor'
-              ? <EditorDashboard />
-              : <ClientDashboard />}
-          </PrivateRoute>
-        } />
-
-        {/* Client Only */}
-        <Route path="/ai-match" element={
-          <PrivateRoute role="client">
-            <AIMatch />
-          </PrivateRoute>
-        } />
-
-        {/* Editor Only */}
-        <Route path="/portfolio" element={
-          <PrivateRoute role="editor">
-            <EditorPortfolio />
-          </PrivateRoute>
-        } />
-        <Route path="/smart-pricing" element={
-          <PrivateRoute role="editor">
-            <SmartPricing />
-          </PrivateRoute>
-        } />
-        <Route path="/video-scorer" element={
-          <PrivateRoute role="editor">
-            <VideoScorer />
-          </PrivateRoute>
-        } />
-
-        {/* Shared Routes */}
-        <Route path="/wallet" element={
-          <PrivateRoute>
-            <Wallet />
-          </PrivateRoute>
-        } />
-        <Route path="/messages" element={
-          <PrivateRoute><Messages /></PrivateRoute>
-        } />
-        <Route path="/messages/:userId" element={
-          <PrivateRoute><Messages /></PrivateRoute>
-        } />
-        <Route path="/collaboration" element={
-          <PrivateRoute><Collaboration /></PrivateRoute>
-        } />
-        <Route path="/collaboration/:roomId" element={
-          <PrivateRoute><Collaboration /></PrivateRoute>
-        } />
-
-        {/* Default */}
-        <Route path="/" element={
-          <Navigate to={user ? '/dashboard' : '/editors'} />
-        } />
-
-      </Routes>
+      <div className="page-wrap">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/editors" element={<BrowseEditors />} />
+          <Route path="/editors/:id" element={<EditorProfile />} />
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              {user?.role === 'editor'
+                ? <EditorDashboard />
+                : <ClientDashboard />}
+            </PrivateRoute>
+          } />
+          <Route path="/ai-match" element={
+            <PrivateRoute role="client"><AIMatch /></PrivateRoute>
+          } />
+          <Route path="/portfolio" element={
+            <PrivateRoute role="editor"><EditorPortfolio /></PrivateRoute>
+          } />
+          <Route path="/smart-pricing" element={
+            <PrivateRoute role="editor"><SmartPricing /></PrivateRoute>
+          } />
+          <Route path="/video-scorer" element={
+            <PrivateRoute role="editor"><VideoScorer /></PrivateRoute>
+          } />
+          <Route path="/wallet" element={
+            <PrivateRoute><Wallet /></PrivateRoute>
+          } />
+          <Route path="/messages" element={
+            <PrivateRoute><Messages /></PrivateRoute>
+          } />
+          <Route path="/messages/:userId" element={
+            <PrivateRoute><Messages /></PrivateRoute>
+          } />
+          <Route path="/collaboration" element={
+            <PrivateRoute><Collaboration /></PrivateRoute>
+          } />
+          <Route path="/collaboration/:roomId" element={
+            <PrivateRoute><Collaboration /></PrivateRoute>
+          } />
+          <Route path="/" element={
+            <Navigate to={user ? '/dashboard' : '/editors'} />
+          } />
+        </Routes>
+      </div>
     </>
   );
 };
