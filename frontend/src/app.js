@@ -15,6 +15,7 @@ import VideoScorer from './pages/VideoScorer';
 import Collaboration from './pages/Collaboration';
 import Wallet from './pages/Wallet';
 import Landing from './pages/Landing';
+import Pricing from './pages/Pricing';
 import Navbar from './components/Navbar';
 import Cursor from './components/Cursor';
 import './index.css';
@@ -42,6 +43,7 @@ const AppRoutes = () => {
 
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/editors" element={<BrowseEditors />} />

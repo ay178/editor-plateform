@@ -48,11 +48,10 @@ const Navbar = () => {
     { to: '/collaboration', label: '🎬 Collaborate' },
     { to: '/wallet', label: '💳 Wallet' },
   ];
-
-  const guestLinks = [
-    { to: '/editors', label: '🔍 Browse Editors' },
-  ];
-
+const guestLinks = [
+  { to: '/editors', label: '🔍 Browse Editors' },
+  { to: '/pricing', label: '💰 Pricing' },
+];
   const links = user
     ? user.role === 'editor' ? editorLinks : clientLinks
     : guestLinks;
