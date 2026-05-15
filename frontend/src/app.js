@@ -14,6 +14,7 @@ import SmartPricing from './pages/SmartPricing';
 import VideoScorer from './pages/VideoScorer';
 import Collaboration from './pages/Collaboration';
 import Wallet from './pages/Wallet';
+import Landing from './pages/Landing';
 import Navbar from './components/Navbar';
 import Cursor from './components/Cursor';
 import './index.css';
@@ -38,10 +39,15 @@ const AppRoutes = () => {
       <Navbar />
       <div className="page-wrap">
         <Routes>
+
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/editors" element={<BrowseEditors />} />
           <Route path="/editors/:id" element={<EditorProfile />} />
+
+          {/* Dashboard */}
           <Route path="/dashboard" element={
             <PrivateRoute>
               {user?.role === 'editor'
@@ -49,18 +55,32 @@ const AppRoutes = () => {
                 : <ClientDashboard />}
             </PrivateRoute>
           } />
+
+          {/* Client Only */}
           <Route path="/ai-match" element={
-            <PrivateRoute role="client"><AIMatch /></PrivateRoute>
+            <PrivateRoute role="client">
+              <AIMatch />
+            </PrivateRoute>
           } />
+
+          {/* Editor Only */}
           <Route path="/portfolio" element={
-            <PrivateRoute role="editor"><EditorPortfolio /></PrivateRoute>
+            <PrivateRoute role="editor">
+              <EditorPortfolio />
+            </PrivateRoute>
           } />
           <Route path="/smart-pricing" element={
-            <PrivateRoute role="editor"><SmartPricing /></PrivateRoute>
+            <PrivateRoute role="editor">
+              <SmartPricing />
+            </PrivateRoute>
           } />
           <Route path="/video-scorer" element={
-            <PrivateRoute role="editor"><VideoScorer /></PrivateRoute>
+            <PrivateRoute role="editor">
+              <VideoScorer />
+            </PrivateRoute>
           } />
+
+          {/* Shared Routes */}
           <Route path="/wallet" element={
             <PrivateRoute><Wallet /></PrivateRoute>
           } />
@@ -76,9 +96,7 @@ const AppRoutes = () => {
           <Route path="/collaboration/:roomId" element={
             <PrivateRoute><Collaboration /></PrivateRoute>
           } />
-          <Route path="/" element={
-            <Navigate to={user ? '/dashboard' : '/editors'} />
-          } />
+
         </Routes>
       </div>
     </>
