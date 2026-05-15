@@ -19,6 +19,7 @@ import Pricing from './pages/Pricing';
 import Navbar from './components/Navbar';
 import Cursor from './components/Cursor';
 import './index.css';
+import InstallPWA from './components/InstallPWA';
 
 const PrivateRoute = ({ children, role }) => {
   const { user, loading } = useAuth();
@@ -37,6 +38,7 @@ const AppRoutes = () => {
   return (
     <>
       <Cursor />
+      <InstallPWA />
       <Navbar />
       <div className="page-wrap">
         <Routes>
