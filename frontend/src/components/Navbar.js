@@ -118,8 +118,8 @@ const guestLinks = [
                 padding: '7px 10px', borderRadius: 10,
                 fontSize: 13, whiteSpace: 'nowrap',
                 fontWeight: isActive(item.to) ? 700 : 500,
-                color: isActive(item.to) ? '#6366F1' : '#64748B',
-                background: isActive(item.to) ? '#EEF2FF' : 'transparent',
+                color: isActive(item.to) ? '#6366F1' : '#d9373f',
+                background: isActive(item.to) ? '#e66119' : 'transparent',
                 textDecoration: 'none', transition: 'all 0.2s',
               }}>
                 {item.label}
