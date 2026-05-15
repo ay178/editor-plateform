@@ -30,14 +30,14 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
 
   const clientLinks = [
-    { to: '/editors', label: '🔍 Browse' },
-    { to: '/ai-match', label: '🤖 AI Match' },
-    { to: '/dashboard', label: '📊 Dashboard' },
-    { to: '/messages', label: '💬 Messages' },
-    { to: '/collaboration', label: '🎬 Collaborate' },
-    { to: '/wallet', label: '💳 Wallet' },
-  ];
-
+  { to: '/editors', label: '🔍 Browse' },
+  { to: '/pricing', label: '💰 Pricing' },
+  { to: '/ai-match', label: '🤖 AI Match' },
+  { to: '/dashboard', label: '📊 Dashboard' },
+  { to: '/messages', label: '💬 Messages' },
+  { to: '/collaboration', label: '🎬 Collaborate' },
+  { to: '/wallet', label: '💳 Wallet' },
+];
   const editorLinks = [
     { to: '/editors', label: '🔍 Browse' },
     { to: '/dashboard', label: '📊 Dashboard' },
@@ -49,7 +49,8 @@ const Navbar = () => {
     { to: '/wallet', label: '💳 Wallet' },
   ];
 const guestLinks = [
-  { to: '/editors', label: '🔍 Browse Editors' },
+  { to: '/', label: '🏠 Home' },
+  { to: '/editors', label: '🔍 Browse' },
   { to: '/pricing', label: '💰 Pricing' },
 ];
   const links = user
@@ -140,7 +141,7 @@ const guestLinks = [
                 <div className="user-pill" style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '5px 10px 5px 5px',
-                  background: 'linear-gradient(135deg, #F5F3FF, #EEF2FF)',
+                  background: 'linear-gradient(135deg, #20b7ee, #4268e6)',
                   borderRadius: 50, border: '1px solid #DDD6FE'
                 }}>
                   <div style={{
