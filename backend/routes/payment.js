@@ -263,5 +263,30 @@ router.post('/withdraw', auth, requireRole('editor'), async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// POST /api/payment/add-funds
+router.post('/add-funds', auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
 
+    const wallet = await getWallet(req.user._id);
+    wallet.balance += Number(amount);
+    wallet.transactions.push({
+      type: 'deposit',
+      amount: Number(amount),
+      description: `Added $${amount} to wallet`,
+      status: 'completed'
+    });
+    await wallet.save();
+
+    res.json({
+      wallet,
+      message: `$${amount} added successfully`
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 module.exports = router;
