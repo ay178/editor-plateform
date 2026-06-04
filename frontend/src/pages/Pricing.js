@@ -104,7 +104,7 @@ const Pricing = () => {
         'Bulk project management',
       ],
       notIncluded: [],
-      cta: 'Contact Sales',
+      cta: 'Start Business',
       popular: false,
     },
   ];
@@ -467,9 +467,7 @@ const Pricing = () => {
 
                 {/* CTA Button */}
                 <button
-                  onClick={() => navigate(
-                    plan.id === 'business' ? '/contact' : '/signup'
-                  )}
+                  onClick={() => navigate('/signup')}
                   style={{
                     width: '100%', padding: '13px',
                     borderRadius: 12, border: 'none',
