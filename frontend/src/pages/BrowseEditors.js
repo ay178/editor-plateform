@@ -1,445 +1,295 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import API from '../utils/api';
 
-const SKILL_LABELS = {
-  'video-editing': 'Video Editing',
-  'photo-editing': 'Photo Editing',
-  'thumbnail-design': 'Thumbnail Design',
-  'color-grading': 'Color Grading',
-  'motion-graphics': 'Motion Graphics',
-  'sound-design': 'Sound Design',
-  'animation': 'Animation',
-};
+const SKILLS = ['video-editing', 'color-grading', 'motion-graphics', 'sound-design', 'thumbnail-design', 'animation', 'photo-editing'];
 
-const SKILL_COLORS = {
-  'video-editing': { bg: '#EEF2FF', color: '#4338CA' },
-  'photo-editing': { bg: '#F0FDF4', color: '#15803D' },
-  'thumbnail-design': { bg: '#FFF7ED', color: '#C2410C' },
-  'color-grading': { bg: '#FDF4FF', color: '#9333EA' },
-  'motion-graphics': { bg: '#EFF6FF', color: '#1D4ED8' },
-  'sound-design': { bg: '#FFF1F2', color: '#BE123C' },
-  'animation': { bg: '#F0FDFA', color: '#0F766E' },
-};
+function Stars({ n }) {
+  return <span className="stars">{'★'.repeat(Math.round(n))}{'☆'.repeat(5 - Math.round(n))}</span>;
+}
 
-const StarRating = ({ rating, size = 14 }) => (
-  <span style={{ display: 'inline-flex', gap: 1 }}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <svg key={i} width={size} height={size} viewBox="0 0 24 24"
-        fill={i <= Math.round(rating) ? '#F59E0B' : 'none'}
-        stroke="#F59E0B" strokeWidth="1.5">
-        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-      </svg>
-    ))}
-  </span>
-);
+function HireModal({ editor, onClose }) {
+  const [form, setForm] = useState({ projectTitle: '', description: '', budget: '', deadline: '', skills: [] });
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
 
-const SkillBadge = ({ skill }) => {
-  const c = SKILL_COLORS[skill] || { bg: '#F3F4F6', color: '#374151' };
-  return (
-    <span style={{
-      background: c.bg, color: c.color,
-      padding: '2px 8px', borderRadius: 20,
-      fontSize: 11, fontWeight: 500,
-      display: 'inline-block', whiteSpace: 'nowrap'
-    }}>{SKILL_LABELS[skill] || skill}</span>
-  );
-};
+  const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const toggleSkill = s => setForm(f => ({
+    ...f, skills: f.skills.includes(s) ? f.skills.filter(x => x !== s) : [...f.skills, s]
+  }));
 
-const BrowseEditors = () => {
-  const [editors, setEditors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [skillFilter, setSkillFilter] = useState('');
-  const [sortBy, setSortBy] = useState('rating');
-  const [priceMax, setPriceMax] = useState(1000);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchEditors();
-  }, [skillFilter, sortBy]);
-
-  const fetchEditors = async () => {
+  const submit = async e => {
+    e.preventDefault(); setLoading(true);
     try {
-      setLoading(true);
-      const params = {};
-      if (skillFilter) params.skill = skillFilter;
-      if (sortBy) params.sort = sortBy;
-      const { data } = await API.get('/editors', { params });
-      setEditors(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      await api.post('/hire', { editorId: editor._id, ...form });
+      setDone(true);
+    } catch (err) { alert(err.response?.data?.message || 'Failed to send request'); }
+    finally { setLoading(false); }
   };
 
-  const filtered = editors.filter(e => {
-    if (search && !e.user?.name?.toLowerCase()
-      .includes(search.toLowerCase())) return false;
-    if (e.price > priceMax) return false;
-    return true;
-  });
-
   return (
-    <>
-      <style>{`
-        .browse-container {
-          max-width: 1140px;
-          margin: 0 auto;
-          padding: 28px 20px;
-        }
-        .editors-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 20px;
-        }
-        .editor-card {
-          background: #fff;
-          border: 1px solid #E2E8F0;
-          border-radius: 18px;
-          overflow: hidden;
-          transition: box-shadow 0.2s, transform 0.2s;
-          cursor: pointer;
-        }
-        .editor-card:hover {
-          box-shadow: 0 8px 30px rgba(99,102,241,0.12);
-          transform: translateY(-3px);
-        }
-        .filters-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          align-items: center;
-        }
-        .filter-select {
-          padding: 10px 14px;
-          border-radius: 10px;
-          border: 1.5px solid #E2E8F0;
-          font-size: 14px;
-          background: #fff;
-          color: #374151;
-          cursor: pointer;
-          font-family: inherit;
-          outline: none;
-        }
-        .search-input {
-          flex: 1;
-          min-width: 200px;
-          padding: 10px 12px 10px 36px;
-          border-radius: 10px;
-          border: 1.5px solid #E2E8F0;
-          font-size: 14px;
-          box-sizing: border-box;
-          outline: none;
-          font-family: inherit;
-        }
-        .search-input:focus {
-          border-color: #6366F1;
-        }
-        @media (max-width: 768px) {
-          .browse-container {
-            padding: 16px 12px;
-          }
-          .editors-grid {
-            grid-template-columns: 1fr;
-            gap: 14px;
-          }
-          .filters-row {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .filter-select {
-            width: 100%;
-          }
-          .search-input {
-            min-width: unset;
-          }
-          .browse-title {
-            font-size: 24px !important;
-          }
-        }
-        @media (max-width: 480px) {
-          .editor-card-body {
-            padding: 14px !important;
-          }
-        }
-      `}</style>
-
-      <div className="browse-container">
-
-        {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 className="browse-title" style={{
-            fontSize: 30, fontWeight: 800, color: '#0F172A',
-            margin: '0 0 8px', letterSpacing: '-1px'
-          }}>
-            Find Your Perfect Editor
-          </h1>
-          <p style={{ color: '#64748B', fontSize: 15, margin: 0 }}>
-            Browse {editors.length} talented editors
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div style={{
-          background: '#fff', border: '1px solid #E2E8F0',
-          borderRadius: 16, padding: '16px 20px', marginBottom: 24
-        }}>
-          <div className="filters-row">
-            {/* Search */}
-            <div style={{ flex: '1 1 200px', position: 'relative' }}>
-              <svg style={{
-                position: 'absolute', left: 12,
-                top: '50%', transform: 'translateY(-50%)'
-              }}
-                width="16" height="16" viewBox="0 0 24 24"
-                fill="none" stroke="#94A3B8" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search editors..."
-                className="search-input"
-              />
-            </div>
-
-            {/* Skill Filter */}
-            <select
-              value={skillFilter}
-              onChange={e => setSkillFilter(e.target.value)}
-              className="filter-select">
-              <option value="">All Skills</option>
-              {Object.entries(SKILL_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-
-            {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="filter-select">
-              <option value="rating">Top Rated</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
-
-            {/* Price Range */}
-            <div style={{
-              display: 'flex', alignItems: 'center',
-              gap: 8, flex: '1 1 160px'
-            }}>
-              <span style={{
-                fontSize: 13, color: '#64748B', whiteSpace: 'nowrap'
-              }}>
-                Max ${priceMax}
-              </span>
-              <input
-                type="range" min={50} max={1000} step={50}
-                value={priceMax}
-                onChange={e => setPriceMax(+e.target.value)}
-                style={{ flex: 1 }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Results Count */}
-        <p style={{
-          color: '#64748B', fontSize: 14, marginBottom: 16
-        }}>
-          {filtered.length} editor{filtered.length !== 1 ? 's' : ''} found
-        </p>
-
-        {/* Loading */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{
-              width: 40, height: 40, border: '3px solid #E2E8F0',
-              borderTopColor: '#6366F1', borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite', margin: '0 auto'
-            }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <p style={{ color: '#94A3B8', marginTop: 16 }}>
-              Loading editors...
-            </p>
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+    }} onClick={onClose}>
+      <div className="glass" style={{ width: '100%', maxWidth: 520, padding: 32, maxHeight: '90vh', overflowY: 'auto' }}
+        onClick={e => e.stopPropagation()}>
+        {done ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Request Sent!</h3>
+            <p style={{ color: '#9B9AB8', marginBottom: 24 }}>Your hire request has been sent to {editor.user?.name}.</p>
+            <button className="btn-primary" onClick={onClose}>Close</button>
           </div>
         ) : (
           <>
-            <div className="editors-grid">
-              {filtered.map(editor => (
-                <div
-                  key={editor._id}
-                  className="editor-card">
-
-                  {/* Portfolio Preview */}
-                  <div style={{
-                    height: 140, background: '#F1F5F9',
-                    position: 'relative', overflow: 'hidden'
-                  }}
-                    onClick={() => navigate(`/editors/${editor.user?._id}`)}>
-                    {editor.portfolio?.[0] && (
-                      <img
-                        src={editor.portfolio[0].thumbnail}
-                        alt=""
-                        style={{
-                          width: '100%', height: '100%',
-                          objectFit: 'cover'
-                        }}
-                      />
-                    )}
-                    <div style={{
-                      position: 'absolute', top: 10, right: 10,
-                      background: editor.availability ? '#DCFCE7' : '#FEE2E2',
-                      color: editor.availability ? '#16A34A' : '#DC2626',
-                      borderRadius: 20, padding: '3px 10px',
-                      fontSize: 11, fontWeight: 700
-                    }}>
-                      {editor.availability ? 'Available' : 'Busy'}
-                    </div>
-                  </div>
-
-                  {/* Card Body */}
-                  <div
-                    className="editor-card-body"
-                    style={{ padding: '16px 18px' }}>
-
-                    {/* Editor Info */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center',
-                      gap: 10, marginBottom: 10
-                    }}
-                      onClick={() => navigate(`/editors/${editor.user?._id}`)}>
-                      <div style={{
-                        width: 42, height: 42, borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-                        color: '#fff', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 700, fontSize: 14, flexShrink: 0
-                      }}>
-                        {editor.user?.name?.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontWeight: 700, fontSize: 15, color: '#0F172A',
-                          whiteSpace: 'nowrap', overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {editor.user?.name}
-                        </div>
-                        <div style={{
-                          fontSize: 12, color: '#94A3B8', marginTop: 1
-                        }}>
-                          {editor.location}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{
-                          fontWeight: 800, fontSize: 16, color: '#6366F1'
-                        }}>
-                          ${editor.price}
-                          <span style={{
-                            fontSize: 11, fontWeight: 400, color: '#94A3B8'
-                          }}>
-                            /{editor.pricingType === 'hourly' ? 'hr' : 'proj'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bio */}
-                    <p style={{
-                      fontSize: 13, color: '#64748B',
-                      margin: '0 0 10px', lineHeight: 1.5,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}>{editor.bio}</p>
-
-                    {/* Skills */}
-                    <div style={{
-                      display: 'flex', flexWrap: 'wrap',
-                      gap: 4, marginBottom: 12
-                    }}>
-                      {editor.skills?.slice(0, 3).map(s => (
-                        <SkillBadge key={s} skill={s} />
-                      ))}
-                    </div>
-
-                    {/* Footer */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingTop: 12, borderTop: '1px solid #F1F5F9'
-                    }}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 4
-                      }}>
-                        <StarRating rating={editor.averageRating} />
-                        <span style={{
-                          fontSize: 13, fontWeight: 600, color: '#0F172A'
-                        }}>
-                          {editor.averageRating}
-                        </span>
-                        <span style={{ fontSize: 12, color: '#94A3B8' }}>
-                          ({editor.totalReviews})
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => navigate(`/editors/${editor.user?._id}`)}
-                          style={{
-                            padding: '7px 12px', borderRadius: 8,
-                            border: '1.5px solid #E2E8F0', background: '#fff',
-                            color: '#374151', cursor: 'pointer',
-                            fontSize: 12, fontWeight: 600,
-                            fontFamily: 'inherit'
-                          }}>View</button>
-                        {(!user || user.role === 'client') && (
-                          <button
-                            onClick={() => navigate(`/editors/${editor.user?._id}`)}
-                            style={{
-                              padding: '7px 12px', borderRadius: 8,
-                              border: 'none', background: '#6366F1',
-                              color: '#fff', cursor: 'pointer',
-                              fontSize: 12, fontWeight: 600,
-                              fontFamily: 'inherit'
-                            }}>Hire</button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 700 }}>Hire {editor.user?.name}</h3>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9B9AB8', fontSize: 20, cursor: 'pointer' }}>✕</button>
             </div>
-
-            {/* Empty State */}
-            {filtered.length === 0 && !loading && (
-              <div style={{
-                textAlign: 'center', padding: '60px 20px',
-                color: '#94A3B8'
-              }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-                <div style={{ fontSize: 17, fontWeight: 600 }}>
-                  No editors found
-                </div>
-                <div style={{ fontSize: 14, marginTop: 4 }}>
-                  Try adjusting your filters
-                </div>
+            <form onSubmit={submit}>
+              <Field label="Project Title">
+                <input className="input" name="projectTitle" placeholder="e.g. YouTube Vlog Edit" value={form.projectTitle} onChange={handle} required />
+              </Field>
+              <Field label="Description">
+                <textarea className="input" name="description" placeholder="Describe your project..." value={form.description} onChange={handle} required rows={3} style={{ resize: 'vertical' }} />
+              </Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <Field label="Budget ($)">
+                  <input className="input" name="budget" type="number" placeholder="500" value={form.budget} onChange={handle} />
+                </Field>
+                <Field label="Deadline">
+                  <input className="input" name="deadline" type="date" value={form.deadline} onChange={handle} />
+                </Field>
               </div>
-            )}
+              <Field label="Skills Needed">
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                  {SKILLS.map(s => (
+                    <button key={s} type="button" onClick={() => toggleSkill(s)}
+                      style={{
+                        padding: '4px 10px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                        fontFamily: 'DM Sans, sans-serif',
+                        background: form.skills.includes(s) ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                        border: form.skills.includes(s) ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
+                        color: form.skills.includes(s) ? '#9F67FF' : '#9B9AB8',
+                      }}>{s}</button>
+                  ))}
+                </div>
+              </Field>
+              <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center', padding: 12, marginTop: 8 }}>
+                {loading ? 'Sending...' : 'Send Hire Request →'}
+              </button>
+            </form>
           </>
         )}
       </div>
-    </>
+    </div>
   );
-};
+}
 
-export default BrowseEditors;
+function Field({ label, children }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 6 }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+export default function BrowseEditors() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [editors, setEditors]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+  const [skill, setSkill]         = useState('');
+  const [minRating, setMinRating] = useState('');
+  const [sort, setSort]           = useState('rating');
+  const [hireTarget, setHireTarget] = useState(null);
+
+  const fetchEditors = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (skill) params.skill = skill;
+      if (minRating) params.minRating = minRating;
+      if (sort) params.sort = sort;
+      const res = await api.get('/editors', { params });
+      setEditors(res.data);
+    } catch { setEditors([]); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchEditors(); }, [search, skill, minRating, sort]);
+
+  const handleHire = (editor) => {
+    if (!user) return navigate('/login');
+    if (user.role !== 'client') return alert('Only clients can hire editors.');
+    setHireTarget(editor);
+  };
+
+  return (
+    <div className="page">
+      <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
+        {/* Header */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 6 }}>Browse Editors</h1>
+          <p style={{ color: '#9B9AB8' }}>Find the perfect editor for your creative project</p>
+        </div>
+
+        {/* Search bar */}
+        <div style={{ marginBottom: 24 }}>
+          <input className="input" placeholder="🔍  Search by name, bio, or skill..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ maxWidth: 500, fontSize: 15 }} />
+        </div>
+
+        <div className="sidebar-layout">
+          {/* Filters sidebar */}
+          <div className="sidebar">
+            <div className="glass" style={{ padding: 20 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#9B9AB8', textTransform: 'uppercase', letterSpacing: 1 }}>Filters</h4>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 8 }}>Skill</label>
+                <select className="input" value={skill} onChange={e => setSkill(e.target.value)}
+                  style={{ background: '#1A1A2E', color: '#F1F0FF' }}>
+                  <option value="">All Skills</option>
+                  {SKILLS.map(s => <option key={s} value={s}>{s.replace(/-/g, ' ')}</option>)}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 8 }}>Min Rating</label>
+                <select className="input" value={minRating} onChange={e => setMinRating(e.target.value)}
+                  style={{ background: '#1A1A2E', color: '#F1F0FF' }}>
+                  <option value="">Any Rating</option>
+                  <option value="4">4★ & above</option>
+                  <option value="4.5">4.5★ & above</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 8 }}>Sort By</label>
+                <select className="input" value={sort} onChange={e => setSort(e.target.value)}
+                  style={{ background: '#1A1A2E', color: '#F1F0FF' }}>
+                  <option value="rating">Top Rated</option>
+                  <option value="price-asc">Price: Low → High</option>
+                  <option value="price-desc">Price: High → Low</option>
+                </select>
+              </div>
+
+              <button className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => { setSkill(''); setMinRating(''); setSort('rating'); setSearch(''); }}>
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Editor grid */}
+          <div className="main-content">
+            {loading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+                {[1,2,3,4,5,6].map(i => (
+                  <div key={i} className="glass" style={{ padding: 24, height: 220 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, height: '100%', animation: 'pulse 1.5s infinite' }} />
+                  </div>
+                ))}
+              </div>
+            ) : editors.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                <p style={{ color: '#9B9AB8' }}>No editors found. Try different filters.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+                {editors.map(editor => (
+                  <EditorCard key={editor._id} editor={editor} onHire={handleHire} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {hireTarget && <HireModal editor={hireTarget} onClose={() => setHireTarget(null)} />}
+    </div>
+  );
+}
+
+function EditorCard({ editor, onHire }) {
+  return (
+    <div className="glass" style={{ padding: 20, transition: 'all 0.25s', cursor: 'pointer' }}>
+      {/* Avatar + online */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <img
+            src={editor.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${editor.user?.name}`}
+            alt={editor.user?.name} className="avatar" style={{ width: 52, height: 52 }}
+          />
+          {editor.availability && (
+            <div style={{
+              position: 'absolute', bottom: 1, right: 1,
+              width: 10, height: 10, background: '#10B981',
+              borderRadius: '50%', border: '2px solid #0F0F1A'
+            }} />
+          )}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>{editor.user?.name}</div>
+          <div style={{ fontSize: 12, color: '#9B9AB8', marginTop: 2 }}>{editor.location || 'Remote'}</div>
+          <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Stars n={editor.averageRating} />
+            <span style={{ fontSize: 12, color: '#9B9AB8' }}>{editor.averageRating?.toFixed(1)} ({editor.totalReviews})</span>
+          </div>
+        </div>
+        <div style={{
+          background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: 8, padding: '4px 10px', fontSize: 13, fontWeight: 700, color: '#9F67FF', flexShrink: 0
+        }}>
+          ${editor.price}<span style={{ fontSize: 10, fontWeight: 400, color: '#9B9AB8' }}>/{editor.pricingType === 'hourly' ? 'hr' : 'proj'}</span>
+        </div>
+      </div>
+
+      <p style={{ fontSize: 13, color: '#9B9AB8', lineHeight: 1.5, marginBottom: 12,
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {editor.bio}
+      </p>
+
+      {/* Skills */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+        {editor.skills?.slice(0, 3).map(s => <span key={s} className="chip" style={{ fontSize: 11 }}>{s.replace(/-/g,' ')}</span>)}
+        {editor.skills?.length > 3 && <span style={{ fontSize: 11, color: '#9B9AB8' }}>+{editor.skills.length - 3}</span>}
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <Stat label="Projects" value={editor.completedProjects} />
+        <Stat label="Response" value={editor.responseTime?.replace('Within ', '')} />
+        <Stat label="Exp" value={`${editor.experience}yr`} />
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Link to={`/editor/${editor.user?._id}`} style={{ flex: 1, textDecoration: 'none' }}>
+          <button className="btn-ghost" style={{ width: '100%', justifyContent: 'center', padding: '8px' }}>View Profile</button>
+        </Link>
+        <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '8px' }}
+          onClick={() => onHire(editor)}>
+          Hire Now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div style={{ textAlign: 'center', flex: 1 }}>
+      <div style={{ fontSize: 13, fontWeight: 600 }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#9B9AB8' }}>{label}</div>
+    </div>
+  );
+}
