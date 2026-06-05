@@ -15,26 +15,31 @@ const seed = async () => {
   await HiringRequest.deleteMany();
   await Review.deleteMany();
 
+  // ✅ FIX: Hash password manually BEFORE insertMany
+  // insertMany() does NOT trigger Mongoose pre('save') hook
+  // so bcrypt hash in User model never runs → plain text stored → login fails
+  const hashedPassword = await bcrypt.hash('password123', 12);
+
   // Create clients
   const clients = await User.insertMany([
     {
       name: 'Alex Rivera',
       email: 'alex@client.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'client',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex'
     },
     {
       name: 'Mia Thompson',
       email: 'mia@client.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'client',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mia'
     },
     {
       name: 'Jordan Lee',
       email: 'jordan@client.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'client',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jordan'
     }
@@ -45,35 +50,35 @@ const seed = async () => {
     {
       name: 'Sofia Chen',
       email: 'sofia@editor.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'editor',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sofia'
     },
     {
       name: 'Marcus Williams',
       email: 'marcus@editor.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'editor',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=marcus'
     },
     {
       name: 'Elena Rossi',
       email: 'elena@editor.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'editor',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=elena'
     },
     {
       name: 'Dev Patel',
       email: 'dev@editor.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'editor',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dev'
     },
     {
       name: 'Zara Ahmed',
       email: 'zara@editor.com',
-      password: 'password123',
+      password: hashedPassword,
       role: 'editor',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zara'
     }
@@ -86,18 +91,8 @@ const seed = async () => {
       bio: 'Award-winning video editor with 6+ years of experience in YouTube, commercials, and short films.',
       skills: ['video-editing', 'color-grading', 'motion-graphics'],
       portfolio: [
-        {
-          title: 'Brand Commercial',
-          url: 'https://picsum.photos/seed/sc1/400/250',
-          type: 'image',
-          thumbnail: 'https://picsum.photos/seed/sc1/400/250'
-        },
-        {
-          title: 'Wedding Highlight',
-          url: 'https://picsum.photos/seed/sc2/400/250',
-          type: 'image',
-          thumbnail: 'https://picsum.photos/seed/sc2/400/250'
-        },
+        { title: 'Brand Commercial', url: 'https://picsum.photos/seed/sc1/400/250', type: 'image', thumbnail: 'https://picsum.photos/seed/sc1/400/250' },
+        { title: 'Wedding Highlight', url: 'https://picsum.photos/seed/sc2/400/250', type: 'image', thumbnail: 'https://picsum.photos/seed/sc2/400/250' },
       ],
       pricingType: 'per-project',
       price: 350,
@@ -115,12 +110,7 @@ const seed = async () => {
       bio: 'Thumbnail artist and photo editor specializing in YouTube content.',
       skills: ['thumbnail-design', 'photo-editing'],
       portfolio: [
-        {
-          title: 'YouTube Thumbnails',
-          url: 'https://picsum.photos/seed/mw1/400/250',
-          type: 'image',
-          thumbnail: 'https://picsum.photos/seed/mw1/400/250'
-        },
+        { title: 'YouTube Thumbnails', url: 'https://picsum.photos/seed/mw1/400/250', type: 'image', thumbnail: 'https://picsum.photos/seed/mw1/400/250' },
       ],
       pricingType: 'per-project',
       price: 120,
@@ -138,12 +128,7 @@ const seed = async () => {
       bio: 'Freelance video editor from Milan with a passion for storytelling.',
       skills: ['video-editing', 'color-grading', 'sound-design'],
       portfolio: [
-        {
-          title: 'Documentary Short',
-          url: 'https://picsum.photos/seed/er1/400/250',
-          type: 'image',
-          thumbnail: 'https://picsum.photos/seed/er1/400/250'
-        },
+        { title: 'Documentary Short', url: 'https://picsum.photos/seed/er1/400/250', type: 'image', thumbnail: 'https://picsum.photos/seed/er1/400/250' },
       ],
       pricingType: 'hourly',
       price: 65,
@@ -161,12 +146,7 @@ const seed = async () => {
       bio: 'Motion graphics designer and animator.',
       skills: ['motion-graphics', 'animation', 'video-editing'],
       portfolio: [
-        {
-          title: 'Logo Animation',
-          url: 'https://picsum.photos/seed/dp1/400/250',
-          type: 'image',
-          thumbnail: 'https://picsum.photos/seed/dp1/400/250'
-        },
+        { title: 'Logo Animation', url: 'https://picsum.photos/seed/dp1/400/250', type: 'image', thumbnail: 'https://picsum.photos/seed/dp1/400/250' },
       ],
       pricingType: 'hourly',
       price: 85,
@@ -184,12 +164,7 @@ const seed = async () => {
       bio: 'All-rounder creative editor specializing in social media content.',
       skills: ['video-editing', 'photo-editing', 'thumbnail-design'],
       portfolio: [
-        {
-          title: 'Instagram Reels',
-          url: 'https://picsum.photos/seed/za1/400/250',
-          type: 'image',
-          thumbnail: 'https://picsum.photos/seed/za1/400/250'
-        },
+        { title: 'Instagram Reels', url: 'https://picsum.photos/seed/za1/400/250', type: 'image', thumbnail: 'https://picsum.photos/seed/za1/400/250' },
       ],
       pricingType: 'per-project',
       price: 200,
@@ -210,9 +185,12 @@ const seed = async () => {
   console.log('\n📧 Demo Accounts (password: password123):');
   console.log('  CLIENT: alex@client.com');
   console.log('  CLIENT: mia@client.com');
+  console.log('  CLIENT: jordan@client.com');
   console.log('  EDITOR: sofia@editor.com');
   console.log('  EDITOR: marcus@editor.com');
   console.log('  EDITOR: elena@editor.com');
+  console.log('  EDITOR: dev@editor.com');
+  console.log('  EDITOR: zara@editor.com');
 
   await mongoose.disconnect();
 };
