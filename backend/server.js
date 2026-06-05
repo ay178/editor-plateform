@@ -7,13 +7,17 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST']
+    origin: [
+      'https://editor-plateform-uvr1.vercel.app',
+      'https://editor-plateform.vercel.app',
+      'http://localhost:3000'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -26,9 +30,12 @@ if (!fs.existsSync('uploads')) {
 app.use(cors({
   origin: [
     'https://editor-plateform-uvr1.vercel.app',
+    'https://editor-plateform.vercel.app',
     'http://localhost:3000'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
