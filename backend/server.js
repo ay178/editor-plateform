@@ -1,4 +1,6 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -163,7 +165,10 @@ io.on('connection', (socket) => {
 });
 
 // ── MongoDB + Server Start ──
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 10000,
+  family: 4,  // Force IPv4 — SRV issue fix karta hai
+})
   .then(() => {
     console.log('✅ MongoDB connected');
     server.listen(process.env.PORT || 5000, () => {
