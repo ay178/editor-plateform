@@ -22,7 +22,7 @@ function HireModal({ editor, onClose }) {
   const submit = async e => {
     e.preventDefault(); setLoading(true);
     try {
-      await api.post('/hire', { editorId: editor._id, ...form });
+      await api.post('/hire', { editorId: editor.user?._id, ...form });
       setDone(true);
     } catch (err) { alert(err.response?.data?.message || 'Failed to send request'); }
     finally { setLoading(false); }
