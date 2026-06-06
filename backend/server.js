@@ -7,13 +7,15 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
       'https://editor-plateform-uvr1.vercel.app',
-      'https://editor-plateform.vercel.app',
+      'https://editor-plateform-vermaprakhar44-9325s-projects.vercel.app',
+      'https://editorhire.vercel.app',
       'http://localhost:3000'
     ],
     methods: ['GET', 'POST'],
@@ -30,7 +32,7 @@ if (!fs.existsSync('uploads')) {
 app.use(cors({
   origin: [
     'https://editor-plateform-uvr1.vercel.app',
-    'https://editor-plateform-vermaprakhar44-9325s-projects.vercel.app',  // ← add karo
+    'https://editor-plateform-vermaprakhar44-9325s-projects.vercel.app',
     'https://editorhire.vercel.app',
     'http://localhost:3000'
   ],
@@ -53,6 +55,7 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/payment', require('./routes/payment'));
+app.use('/api/project-files', require('./routes/projectfiles'));
 
 // ── Health Check ──
 app.get('/api/health', (req, res) => {
@@ -65,13 +68,11 @@ const collaborationRooms = new Map();
 
 io.on('connection', (socket) => {
 
-  // User joins
   socket.on('user:join', (userId) => {
     onlineUsers.set(userId, socket.id);
     io.emit('users:online', Array.from(onlineUsers.keys()));
   });
 
-  // Chat message
   socket.on('message:send', (data) => {
     const receiverSocketId = onlineUsers.get(data.receiverId);
     if (receiverSocketId) {
@@ -79,26 +80,18 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ── Collaboration Room ──
   socket.on('collab:join', ({ roomId, userId, userName }) => {
     socket.join(roomId);
-
     if (!collaborationRooms.has(roomId)) {
       collaborationRooms.set(roomId, {
-        users: [],
-        content: '',
-        comments: [],
-        timeline: []
+        users: [], content: '', comments: [], timeline: []
       });
     }
-
     const room = collaborationRooms.get(roomId);
-
     const existing = room.users.find(u => u.userId === userId);
     if (!existing) {
       room.users.push({ userId, userName, socketId: socket.id });
     }
-
     socket.emit('collab:state', room);
     socket.to(roomId).emit('collab:user-joined', { userId, userName });
     io.to(roomId).emit('collab:users', room.users);
@@ -114,11 +107,7 @@ io.on('connection', (socket) => {
   socket.on('collab:add-comment', ({ roomId, comment }) => {
     if (collaborationRooms.has(roomId)) {
       const room = collaborationRooms.get(roomId);
-      const newComment = {
-        id: Date.now(),
-        ...comment,
-        timestamp: new Date()
-      };
+      const newComment = { id: Date.now(), ...comment, timestamp: new Date() };
       room.comments.push(newComment);
       io.to(roomId).emit('collab:comment-added', newComment);
     }
@@ -134,9 +123,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('collab:cursor', ({ roomId, userId, userName, position }) => {
-    socket.to(roomId).emit('collab:cursor-update', {
-      userId, userName, position
-    });
+    socket.to(roomId).emit('collab:cursor-update', { userId, userName, position });
   });
 
   socket.on('collab:leave', ({ roomId, userId }) => {
@@ -159,9 +146,7 @@ io.on('connection', (socket) => {
     io.emit('users:online', Array.from(onlineUsers.keys()));
 
     for (const [roomId, room] of collaborationRooms.entries()) {
-      const userIndex = room.users.findIndex(
-        u => u.socketId === socket.id
-      );
+      const userIndex = room.users.findIndex(u => u.socketId === socket.id);
       if (userIndex !== -1) {
         const userId = room.users[userIndex].userId;
         room.users.splice(userIndex, 1);
@@ -175,7 +160,7 @@ io.on('connection', (socket) => {
 // ── MongoDB + Server Start ──
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 10000,
-  family: 4,  // Force IPv4 — SRV issue fix karta hai
+  family: 4,
 })
   .then(() => {
     console.log('✅ MongoDB connected');

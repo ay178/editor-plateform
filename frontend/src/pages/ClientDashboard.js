@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import ProjectFiles from '../components/ProjectFiles';
 
 function Stars({ n }) {
   return <span className="stars">{'★'.repeat(Math.round(n))}{'☆'.repeat(5 - Math.round(n))}</span>;
@@ -42,13 +43,11 @@ export default function ClientDashboard() {
   return (
     <div className="page">
       <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
-        {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <p style={{ color: '#9B9AB8', fontSize: 14 }}>Welcome back,</p>
           <h1 style={{ fontSize: 30, fontWeight: 700 }}>{user?.name} 👋</h1>
         </div>
 
-        {/* Stats */}
         <div className="grid-4" style={{ marginBottom: 36 }}>
           {[
             { label: 'Total Requests', value: stats.total, color: '#7C3AED' },
@@ -63,7 +62,6 @@ export default function ClientDashboard() {
           ))}
         </div>
 
-        {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 12, flexWrap: 'wrap' }}>
           {['all', 'pending', 'accepted', 'completed', 'rejected', 'cancelled'].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
@@ -76,7 +74,6 @@ export default function ClientDashboard() {
           ))}
         </div>
 
-        {/* Requests */}
         {loading ? <p style={{ color: '#9B9AB8' }}>Loading...</p>
           : filtered.length === 0
           ? <div style={{ textAlign: 'center', padding: '60px 0' }}>
@@ -109,47 +106,53 @@ export default function ClientDashboard() {
 export function RequestCard({ req, role, onCancel, onComplete, onReview, onMessage, onAccept, onReject }) {
   const other = role === 'client' ? req.editor : req.client;
   return (
-    <div className="glass" style={{ padding: 20, display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      <img src={other?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${other?.name}`}
-        alt={other?.name} style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid rgba(124,58,237,0.4)', flexShrink: 0 }} />
+    <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {/* Top row */}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <img src={other?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${other?.name}`}
+          alt={other?.name} style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid rgba(124,58,237,0.4)', flexShrink: 0 }} />
 
-      <div style={{ flex: 1, minWidth: 200 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-          <span style={{ fontWeight: 600, fontSize: 15 }}>{req.projectTitle}</span>
-          <StatusPill status={req.status} />
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+            <span style={{ fontWeight: 600, fontSize: 15 }}>{req.projectTitle}</span>
+            <span className={`status status-${req.status}`}>{req.status}</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#9B9AB8', marginBottom: 6 }}>
+            {role === 'client' ? `Editor: ${other?.name}` : `Client: ${other?.name}`}
+            {req.budget && ` · $${req.budget}`}
+            {req.deadline && ` · Due ${new Date(req.deadline).toLocaleDateString()}`}
+          </div>
+          <p style={{ fontSize: 13, color: '#9B9AB8', lineHeight: 1.5,
+            display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {req.description}
+          </p>
         </div>
-        <div style={{ fontSize: 13, color: '#9B9AB8', marginBottom: 6 }}>
-          {role === 'client' ? `Editor: ${other?.name}` : `Client: ${other?.name}`}
-          {req.budget && ` · $${req.budget}`}
-          {req.deadline && ` · Due ${new Date(req.deadline).toLocaleDateString()}`}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
+          {onMessage && (
+            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onMessage}>💬 Chat</button>
+          )}
+          {role === 'editor' && req.status === 'pending' && (
+            <>
+              <button className="btn-primary" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onAccept}>Accept</button>
+              <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }} onClick={onReject}>Reject</button>
+            </>
+          )}
+          {role === 'client' && req.status === 'accepted' && (
+            <button className="btn-primary" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onComplete}>Mark Complete</button>
+          )}
+          {role === 'client' && req.status === 'pending' && (
+            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#EF4444' }} onClick={onCancel}>Cancel</button>
+          )}
+          {role === 'client' && req.status === 'completed' && onReview && (
+            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#F59E0B' }} onClick={onReview}>⭐ Review</button>
+          )}
         </div>
-        <p style={{ fontSize: 13, color: '#9B9AB8', lineHeight: 1.5,
-          display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {req.description}
-        </p>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
-        {onMessage && (
-          <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onMessage}>💬 Chat</button>
-        )}
-        {role === 'editor' && req.status === 'pending' && (
-          <>
-            <button className="btn-primary" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onAccept}>Accept</button>
-            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }} onClick={onReject}>Reject</button>
-          </>
-        )}
-        {role === 'client' && req.status === 'accepted' && (
-          <button className="btn-primary" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onComplete}>Mark Complete</button>
-        )}
-        {role === 'client' && req.status === 'pending' && (
-          <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#EF4444' }} onClick={onCancel}>Cancel</button>
-        )}
-        {role === 'client' && req.status === 'completed' && onReview && (
-          <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#F59E0B' }} onClick={onReview}>⭐ Review</button>
-        )}
-      </div>
+      {/* File sharing — only for accepted/completed */}
+      <ProjectFiles requestId={req._id} requestStatus={req.status} />
     </div>
   );
 }

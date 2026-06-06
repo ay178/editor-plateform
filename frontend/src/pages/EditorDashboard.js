@@ -1,8 +1,10 @@
+import ProjectFiles from '../components/ProjectFiles';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { RequestCard } from './ClientDashboard';
+import ProjectFiles from '../components/ProjectFiles';
 
 const SKILLS = ['video-editing', 'color-grading', 'motion-graphics', 'sound-design', 'thumbnail-design', 'animation', 'photo-editing'];
 
