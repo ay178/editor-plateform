@@ -11,7 +11,11 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       api.get('/me')
-        .then(res => setUser(res.data.user))
+        .then(res => {
+          const u = res.data.user;
+          // Normalize _id
+          setUser({ ...u, _id: u._id || u.id });
+        })
         .catch(() => localStorage.removeItem('token'))
         .finally(() => setLoading(false));
     } else {
@@ -22,15 +26,19 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await api.post('/login', { email, password });
     localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data.user;
+    const u = res.data.user;
+    const userData = { ...u, _id: u._id || u.id };
+    setUser(userData);
+    return userData;
   };
 
   const signup = async (name, email, password, role) => {
     const res = await api.post('/signup', { name, email, password, role });
     localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data.user;
+    const u = res.data.user;
+    const userData = { ...u, _id: u._id || u.id };
+    setUser(userData);
+    return userData;
   };
 
   const logout = () => {
