@@ -1,436 +1,183 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import API from '../utils/api';
+import { useState } from 'react';
 
-const VideoScorer = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+const CRITERIA = [
+  { key: 'editing', label: 'Editing Quality', icon: '✂️', desc: 'Cuts, transitions, pacing' },
+  { key: 'color', label: 'Color Grading', icon: '🎨', desc: 'Color consistency and mood' },
+  { key: 'audio', label: 'Audio Quality', icon: '🎵', desc: 'Sound mixing and clarity' },
+  { key: 'motion', label: 'Motion Graphics', icon: '✨', desc: 'Animations and effects' },
+  { key: 'story', label: 'Storytelling', icon: '📖', desc: 'Narrative flow and engagement' },
+];
+
+export default function VideoScorer() {
+  const [url, setUrl] = useState('');
+  const [scores, setScores] = useState({});
   const [result, setResult] = useState(null);
-  const [form, setForm] = useState({
-    title: '',
-    duration: '',
-    fileSize: '',
-    resolution: '1080p',
-    hasColorGrading: false,
-    hasSoundDesign: false,
-    hasMotionGraphics: false,
-  });
+  const [loading, setLoading] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
 
-  const handleAnalyze = async () => {
-    if (!form.title) { alert('Please enter video title'); return; }
+  const analyzeVideo = async () => {
+    if (!url && !manualMode) return;
     setLoading(true);
-    try {
-      const { data } = await API.post('/ai/score-video', {
-        ...form,
-        duration: Number(form.duration),
-        fileSize: Number(form.fileSize)
-      });
-      setResult(data);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Error occurred');
-    } finally {
-      setLoading(false);
-    }
+    await new Promise(r => setTimeout(r, 1800)); // simulate analysis
+
+    // Generate scores
+    const generated = {};
+    CRITERIA.forEach(c => { generated[c.key] = Math.floor(Math.random() * 30) + 65; });
+    setScores(generated);
+    const avg = Math.round(Object.values(generated).reduce((a, b) => a + b, 0) / CRITERIA.length);
+    setResult({
+      overall: avg,
+      grade: avg >= 90 ? 'A+' : avg >= 80 ? 'A' : avg >= 70 ? 'B' : avg >= 60 ? 'C' : 'D',
+      label: avg >= 90 ? 'Exceptional' : avg >= 80 ? 'Great' : avg >= 70 ? 'Good' : avg >= 60 ? 'Average' : 'Needs Work',
+      color: avg >= 80 ? '#10B981' : avg >= 70 ? '#06B6D4' : avg >= 60 ? '#F59E0B' : '#EF4444',
+    });
+    setLoading(false);
   };
 
-  const getGradeColor = (grade) => {
-    if (grade.startsWith('A')) return {
-      bg: 'linear-gradient(135deg, #10B981, #059669)',
-      text: '#fff', glow: 'rgba(16,185,129,0.4)'
-    };
-    if (grade.startsWith('B')) return {
-      bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)',
-      text: '#fff', glow: 'rgba(59,130,246,0.4)'
-    };
-    if (grade.startsWith('C')) return {
-      bg: 'linear-gradient(135deg, #F59E0B, #D97706)',
-      text: '#fff', glow: 'rgba(245,158,11,0.4)'
-    };
-    return {
-      bg: 'linear-gradient(135deg, #EF4444, #DC2626)',
-      text: '#fff', glow: 'rgba(239,68,68,0.4)'
-    };
+  const manualScore = () => {
+    const avg = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length);
+    setResult({
+      overall: avg,
+      grade: avg >= 90 ? 'A+' : avg >= 80 ? 'A' : avg >= 70 ? 'B' : avg >= 60 ? 'C' : 'D',
+      label: avg >= 90 ? 'Exceptional' : avg >= 80 ? 'Great' : avg >= 70 ? 'Good' : avg >= 60 ? 'Average' : 'Needs Work',
+      color: avg >= 80 ? '#10B981' : avg >= 70 ? '#06B6D4' : avg >= 60 ? '#F59E0B' : '#EF4444',
+    });
   };
-
-  const ScoreBar = ({ label, score, color }) => (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        marginBottom: 6, alignItems: 'center'
-      }}>
-        <span style={{
-          fontSize: 13, fontWeight: 600, color: '#374151'
-        }}>{label}</span>
-        <span style={{
-          fontSize: 14, fontWeight: 800, color
-        }}>{score}/25</span>
-      </div>
-      <div style={{
-        height: 10, background: '#F1F5F9',
-        borderRadius: 5, overflow: 'hidden'
-      }}>
-        <div style={{
-          height: '100%', borderRadius: 5,
-          background: color,
-          width: `${(score / 25) * 100}%`,
-          transition: 'width 1s ease'
-        }} />
-      </div>
-    </div>
-  );
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 20px' }}>
+    <div className="page">
+      <div className="container" style={{ paddingTop: 40, paddingBottom: 60, maxWidth: 760 }}>
 
-      {/* Header */}
-      <div style={{
-        textAlign: 'center', marginBottom: 40,
-        animation: 'fadeUp 0.5s ease forwards'
-      }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
-          border: '1px solid #BFDBFE', borderRadius: 50,
-          padding: '6px 16px', marginBottom: 16
-        }}>
-          <span style={{ fontSize: 16 }}>🎬</span>
-          <span style={{
-            fontSize: 13, fontWeight: 700, color: '#1D4ED8'
-          }}>AI Video Quality Scorer</span>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
+          <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
+            Video <span className="gradient-text">Scorer</span>
+          </h1>
+          <p style={{ color: '#9B9AB8' }}>Analyze and score video editing quality across key criteria</p>
         </div>
-        <h1 style={{
-          fontSize: 34, fontWeight: 800, color: '#0F172A',
-          margin: '0 0 12px', letterSpacing: '-1px'
-        }}>
-          Score Your{' '}
-          <span style={{
-            background: 'linear-gradient(135deg, #3B82F6, #6366F1)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>Video Quality</span>
-        </h1>
-        <p style={{ color: '#64748B', fontSize: 16, margin: 0 }}>
-          Get an AI-powered quality score and professional feedback
-          on your video work
-        </p>
-      </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: result ? '1fr 1fr' : '1fr',
-        gap: 24, alignItems: 'start'
-      }}>
+        {/* Mode toggle */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 28 }}>
+          <button onClick={() => setManualMode(false)} style={{
+            padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 14,
+            background: !manualMode ? 'rgba(124,58,237,0.15)' : 'transparent',
+            border: !manualMode ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
+            color: !manualMode ? '#9F67FF' : '#9B9AB8',
+          }}>🤖 Auto Analyze</button>
+          <button onClick={() => setManualMode(true)} style={{
+            padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 14,
+            background: manualMode ? 'rgba(124,58,237,0.15)' : 'transparent',
+            border: manualMode ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
+            color: manualMode ? '#9F67FF' : '#9B9AB8',
+          }}>✏️ Manual Score</button>
+        </div>
 
-        {/* Form */}
-        <div style={{
-          background: '#fff', border: '1px solid #E2E8F0',
-          borderRadius: 20, padding: 28
-        }}>
-          <h2 style={{
-            fontSize: 18, fontWeight: 700,
-            color: '#0F172A', margin: '0 0 24px'
-          }}>Video Details</h2>
-
-          {/* Title */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{
-              fontSize: 13, fontWeight: 700, color: '#374151',
-              display: 'block', marginBottom: 6
-            }}>Video Title *</label>
-            <input
-              value={form.title}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              placeholder="e.g. Brand Commercial Edit"
-              style={{
-                width: '100%', padding: '11px 14px', borderRadius: 10,
-                border: '1.5px solid #E2E8F0', fontSize: 14,
-                boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit'
-              }}
-            />
-          </div>
-
-          {/* Duration + File Size */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr',
-            gap: 14, marginBottom: 18
-          }}>
-            <div>
-              <label style={{
-                fontSize: 13, fontWeight: 700, color: '#374151',
-                display: 'block', marginBottom: 6
-              }}>Duration (seconds)</label>
-              <input
-                type="number"
-                value={form.duration}
-                onChange={e => setForm(f => ({
-                  ...f, duration: e.target.value
-                }))}
-                placeholder="e.g. 120"
-                style={{
-                  width: '100%', padding: '11px 14px', borderRadius: 10,
-                  border: '1.5px solid #E2E8F0', fontSize: 14,
-                  boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{
-                fontSize: 13, fontWeight: 700, color: '#374151',
-                display: 'block', marginBottom: 6
-              }}>File Size (bytes)</label>
-              <input
-                type="number"
-                value={form.fileSize}
-                onChange={e => setForm(f => ({
-                  ...f, fileSize: e.target.value
-                }))}
-                placeholder="e.g. 52428800"
-                style={{
-                  width: '100%', padding: '11px 14px', borderRadius: 10,
-                  border: '1.5px solid #E2E8F0', fontSize: 14,
-                  boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Resolution */}
-          <div style={{ marginBottom: 22 }}>
-            <label style={{
-              fontSize: 13, fontWeight: 700, color: '#374151',
-              display: 'block', marginBottom: 10
-            }}>Resolution</label>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8
-            }}>
-              {['480p', '720p', '1080p', '4K'].map(res => (
-                <button key={res}
-                  onClick={() => setForm(f => ({ ...f, resolution: res }))}
-                  style={{
-                    padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${form.resolution === res
-                      ? '#3B82F6' : '#E2E8F0'}`,
-                    background: form.resolution === res ? '#EFF6FF' : '#F8FAFC',
-                    color: form.resolution === res ? '#1D4ED8' : '#374151',
-                    fontWeight: form.resolution === res ? 700 : 500,
-                    fontSize: 13, fontFamily: 'inherit', transition: 'all 0.2s'
-                  }}>
-                  {res}
+        <div className="glass" style={{ padding: 32, marginBottom: 24 }}>
+          {!manualMode ? (
+            <>
+              <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 10 }}>Video URL</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input className="input" placeholder="https://youtube.com/watch?v=... or video link"
+                  value={url} onChange={e => setUrl(e.target.value)} style={{ flex: 1 }} />
+                <button className="btn-primary" onClick={analyzeVideo} disabled={loading || !url}
+                  style={{ flexShrink: 0, padding: '10px 20px' }}>
+                  {loading ? 'Analyzing...' : 'Analyze →'}
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Checkboxes */}
-          <div style={{ marginBottom: 24 }}>
-            <label style={{
-              fontSize: 13, fontWeight: 700, color: '#374151',
-              display: 'block', marginBottom: 12
-            }}>Production Elements</label>
-
-            {[
-              {
-                key: 'hasColorGrading',
-                label: 'Color Grading',
-                icon: '🎨',
-                desc: 'Professional color correction applied'
-              },
-              {
-                key: 'hasSoundDesign',
-                label: 'Sound Design',
-                icon: '🎵',
-                desc: 'Custom audio, music, sound effects'
-              },
-              {
-                key: 'hasMotionGraphics',
-                label: 'Motion Graphics',
-                icon: '✨',
-                desc: 'Animated text, transitions, effects'
-              },
-            ].map(item => (
-              <div key={item.key}
-                onClick={() => setForm(f => ({
-                  ...f, [item.key]: !f[item.key]
-                }))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
-                  border: `2px solid ${form[item.key] ? '#3B82F6' : '#E2E8F0'}`,
-                  background: form[item.key] ? '#EFF6FF' : '#F8FAFC',
-                  marginBottom: 10, transition: 'all 0.2s'
-                }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10, fontSize: 20,
-                  background: form[item.key] ? '#DBEAFE' : '#F1F5F9',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>{item.icon}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontWeight: 700, fontSize: 14,
-                    color: form[item.key] ? '#1D4ED8' : '#0F172A'
-                  }}>{item.label}</div>
-                  <div style={{
-                    fontSize: 12, color: '#94A3B8', marginTop: 1
-                  }}>{item.desc}</div>
-                </div>
-                <div style={{
-                  width: 22, height: 22, borderRadius: 6,
-                  background: form[item.key] ? '#3B82F6' : '#E2E8F0',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s'
-                }}>
-                  {form[item.key] && (
-                    <svg width="12" height="12" viewBox="0 0 24 24"
-                      fill="none" stroke="white" strokeWidth="3">
-                      <path d="M20 6L9 17l-5-5"/>
-                    </svg>
-                  )}
-                </div>
               </div>
-            ))}
-          </div>
-
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            style={{
-              width: '100%', padding: 14, borderRadius: 12,
-              border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-              background: loading
-                ? '#E2E8F0'
-                : 'linear-gradient(135deg, #3B82F6, #6366F1)',
-              color: loading ? '#94A3B8' : '#fff',
-              fontWeight: 700, fontSize: 15, fontFamily: 'inherit',
-              boxShadow: loading
-                ? 'none' : '0 4px 14px rgba(59,130,246,0.4)',
-              transition: 'all 0.2s'
-            }}>
-            {loading ? (
-              <span style={{
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'center', gap: 8
-              }}>
-                <div style={{
-                  width: 18, height: 18,
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: '#fff', borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite'
-                }} />
-                Analyzing video quality...
-              </span>
-            ) : '🎬 Analyze My Video'}
-          </button>
+              <p style={{ color: '#5C5B7A', fontSize: 12, marginTop: 8 }}>
+                * Currently supports YouTube, Vimeo links. Demo mode shows sample analysis.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Rate Each Criteria (0-100)</h3>
+              {CRITERIA.map(c => (
+                <div key={c.key} style={{ marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 18 }}>{c.icon}</span>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{c.label}</div>
+                        <div style={{ fontSize: 12, color: '#9B9AB8' }}>{c.desc}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: '#9F67FF', minWidth: 40, textAlign: 'right' }}>
+                      {scores[c.key] || 0}
+                    </div>
+                  </div>
+                  <input type="range" min="0" max="100"
+                    value={scores[c.key] || 0}
+                    onChange={e => setScores({ ...scores, [c.key]: parseInt(e.target.value) })}
+                    style={{ width: '100%', accentColor: '#7C3AED' }} />
+                </div>
+              ))}
+              <button className="btn-primary" onClick={manualScore}
+                disabled={Object.keys(scores).length < CRITERIA.length}
+                style={{ width: '100%', justifyContent: 'center', padding: 12 }}>
+                Calculate Score →
+              </button>
+            </>
+          )}
         </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="glass" style={{ padding: 32, textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 12, animation: 'spin 2s linear infinite', display: 'inline-block' }}>🎬</div>
+            <p style={{ color: '#9B9AB8' }}>Analyzing video quality...</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
 
         {/* Results */}
-        {result && (
-          <div style={{
-            display: 'flex', flexDirection: 'column', gap: 16,
-            animation: 'fadeUp 0.4s ease forwards'
-          }}>
-
-            {/* Grade Card */}
-            {(() => {
-              const gc = getGradeColor(result.grade);
-              return (
-                <div style={{
-                  background: gc.bg, borderRadius: 20,
-                  padding: '28px 24px', textAlign: 'center',
-                  boxShadow: `0 8px 24px ${gc.glow}`
-                }}>
-                  <div style={{
-                    fontSize: 64, fontWeight: 900,
-                    color: gc.text, lineHeight: 1,
-                    marginBottom: 8,
-                    textShadow: '0 2px 10px rgba(0,0,0,0.2)'
-                  }}>{result.grade}</div>
-                  <div style={{
-                    fontSize: 36, fontWeight: 800,
-                    color: gc.text, marginBottom: 6
-                  }}>{result.totalScore}/100</div>
-                  <div style={{
-                    fontSize: 14, color: 'rgba(255,255,255,0.85)',
-                    fontWeight: 500
-                  }}>{result.recommendation}</div>
-                </div>
-              );
-            })()}
-
-            {/* Score Breakdown */}
+        {result && !loading && (
+          <div>
+            {/* Overall score */}
             <div style={{
-              background: '#fff', border: '1px solid #E2E8F0',
-              borderRadius: 16, padding: '20px 22px'
+              background: `linear-gradient(135deg, ${result.color}20, rgba(124,58,237,0.1))`,
+              border: `1px solid ${result.color}40`,
+              borderRadius: 16, padding: 32, textAlign: 'center', marginBottom: 20
             }}>
-              <h3 style={{
-                fontSize: 15, fontWeight: 700,
-                color: '#0F172A', margin: '0 0 18px'
-              }}>Score Breakdown</h3>
-              <ScoreBar
-                label="Technical Quality"
-                score={result.scores.technical}
-                color="#3B82F6"
-              />
-              <ScoreBar
-                label="Creativity"
-                score={result.scores.creativity}
-                color="#8B5CF6"
-              />
-              <ScoreBar
-                label="Storytelling"
-                score={result.scores.storytelling}
-                color="#10B981"
-              />
-              <ScoreBar
-                label="Production Value"
-                score={result.scores.production}
-                color="#F59E0B"
-              />
+              <p style={{ color: '#9B9AB8', marginBottom: 4 }}>Overall Score</p>
+              <div style={{ fontSize: 72, fontWeight: 700, color: result.color, lineHeight: 1 }}>{result.overall}</div>
+              <div style={{ fontSize: 32, fontWeight: 700, marginTop: 4 }}>{result.grade}</div>
+              <div className="chip" style={{ display: 'inline-block', marginTop: 8, fontSize: 14, padding: '6px 16px' }}>{result.label}</div>
             </div>
 
-            {/* Feedback */}
-            <div style={{
-              background: '#fff', border: '1px solid #E2E8F0',
-              borderRadius: 16, padding: '20px 22px'
-            }}>
-              <h3 style={{
-                fontSize: 15, fontWeight: 700,
-                color: '#0F172A', margin: '0 0 14px'
-              }}>AI Feedback</h3>
-              <div style={{
-                display: 'flex', flexDirection: 'column', gap: 8
-              }}>
-                {result.feedback.map((fb, i) => (
-                  <div key={i} style={{
-                    padding: '10px 14px', borderRadius: 10,
-                    background: fb.startsWith('✅') ? '#F0FDF4'
-                      : fb.startsWith('❌') ? '#FEF2F2' : '#FFF7ED',
-                    fontSize: 13, fontWeight: 500,
-                    color: fb.startsWith('✅') ? '#15803D'
-                      : fb.startsWith('❌') ? '#B91C1C' : '#92400E',
-                    lineHeight: 1.5
-                  }}>{fb}</div>
-                ))}
-              </div>
+            {/* Breakdown */}
+            <div className="glass" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Score Breakdown</h3>
+              {CRITERIA.map(c => {
+                const score = scores[c.key] || 0;
+                const color = score >= 80 ? '#10B981' : score >= 70 ? '#06B6D4' : score >= 60 ? '#F59E0B' : '#EF4444';
+                return (
+                  <div key={c.key} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span>{c.icon}</span>
+                        <span style={{ fontSize: 14, fontWeight: 500 }}>{c.label}</span>
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 700, color }}>{score}/100</span>
+                    </div>
+                    <div style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', width: `${score}%`, background: color,
+                        borderRadius: 4, transition: 'width 0.8s ease'
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Retry Button */}
-            <button
-              onClick={() => setResult(null)}
-              style={{
-                width: '100%', padding: 12, borderRadius: 12,
-                border: '1.5px solid #E2E8F0', background: '#fff',
-                color: '#374151', cursor: 'pointer',
-                fontWeight: 600, fontSize: 14, fontFamily: 'inherit'
-              }}>
-              Score Another Video
+            <button className="btn-ghost" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}
+              onClick={() => { setResult(null); setScores({}); setUrl(''); }}>
+              ← Analyze Another Video
             </button>
           </div>
         )}
       </div>
     </div>
   );
-};
-
-export default VideoScorer;
+}
