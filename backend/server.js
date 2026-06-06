@@ -30,7 +30,8 @@ if (!fs.existsSync('uploads')) {
 app.use(cors({
   origin: [
     'https://editor-plateform-uvr1.vercel.app',
-    'https://editor-plateform.vercel.app',
+    'https://editor-plateform-vermaprakhar44-9325s-projects.vercel.app',  // ← add karo
+    'https://editorhire.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true,
