@@ -4,7 +4,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { auth } = require('../middleware/auth');
 const HiringRequest = require('../models/HiringRequest');
-const ProjectFile = require('../models/projectfiles');
+const ProjectFile = require('../models/ProjectFile');
 
 // Cloudinary config
 cloudinary.config({
