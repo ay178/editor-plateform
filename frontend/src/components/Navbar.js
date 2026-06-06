@@ -72,7 +72,7 @@ export default function Navbar() {
           {user ? (
             <div style={{ position: 'relative' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-                onClick={() => setMenuOpen(!menuOpen)}>
+                onClick={() => setTimeout(() => setMenuOpen(m => !m), 0)}>
                 <img
                   src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                   alt={user.name}
