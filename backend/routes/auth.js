@@ -13,7 +13,29 @@ router.post('/signup', async (req, res) => {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password || !role)
       return res.status(400).json({ message: 'All fields are required' });
+const { name, email, password, role } = req.body;
+if (!name || !email || !password || !role)
+  return res.status(400).json({ message: 'All fields are required' });
 
+// ── Strong Validation ──
+if (name.trim().length < 2)
+  return res.status(400).json({ message: 'Name must be at least 2 characters' });
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!emailRegex.test(email))
+  return res.status(400).json({ message: 'Invalid email address' });
+
+if (password.length < 8)
+  return res.status(400).json({ message: 'Password must be at least 8 characters' });
+
+if (!/[A-Z]/.test(password))
+  return res.status(400).json({ message: 'Password must contain at least one uppercase letter' });
+
+if (!/[0-9]/.test(password))
+  return res.status(400).json({ message: 'Password must contain at least one number' });
+
+if (!/[!@#$%^&*]/.test(password))
+  return res.status(400).json({ message: 'Password must contain at least one special character (!@#$%^&*)' });
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
 
