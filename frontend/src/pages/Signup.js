@@ -65,7 +65,6 @@ export default function Signup() {
   };
 
   const submit = async e => {
-<<<<<<< Updated upstream
     e.preventDefault();
     setError('');
 
@@ -83,10 +82,6 @@ export default function Signup() {
       setError(err.response?.data?.message || 'Signup failed');
     } finally { setLoading(false); }
   };
-=======
-  e.preventDefault();
-  setError('');
->>>>>>> Stashed changes
 
   if (form.name.trim().length < 2)
     return setError('Name must be at least 2 characters');
@@ -208,4 +203,4 @@ export default function Signup() {
       </div>
     </div>
   );
-}
+
