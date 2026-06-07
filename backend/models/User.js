@@ -7,7 +7,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['client', 'editor'], required: true },
   avatar: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+createdAt: { type: Date, default: Date.now },
+  isVerified: { type: Boolean, default: false },
+  verificationToken: { type: String },
+  verificationTokenExpiry: { type: Date },
 });
 
 userSchema.pre('save', async function (next) {
