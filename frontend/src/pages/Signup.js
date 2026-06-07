@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 function PasswordStrength({ password }) {
   const checks = [
@@ -18,7 +18,6 @@ function PasswordStrength({ password }) {
 
   return (
     <div style={{ marginTop: 8 }}>
-      {/* Strength bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
         {[1,2,3,4].map(i => (
           <div key={i} style={{
@@ -29,17 +28,11 @@ function PasswordStrength({ password }) {
         ))}
       </div>
       <div style={{ fontSize: 11, color, marginBottom: 8, fontWeight: 600 }}>{label}</div>
-
-      {/* Checklist */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {checks.map(c => (
           <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>
-              {c.valid ? '✓' : '○'}
-            </span>
-            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>
-              {c.label}
-            </span>
+            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>{c.valid ? '✓' : '○'}</span>
+            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>{c.label}</span>
           </div>
         ))}
       </div>
@@ -48,21 +41,19 @@ function PasswordStrength({ password }) {
 }
 
 export default function Signup() {
-  const { signup } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'client' });
-  const [error, setError]   = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const isPasswordStrong = () => {
-    return form.password.length >= 8 &&
-      /[A-Z]/.test(form.password) &&
-      /[0-9]/.test(form.password) &&
-      /[!@#$%^&*]/.test(form.password);
-  };
+  const isPasswordStrong = () =>
+    form.password.length >= 8 &&
+    /[A-Z]/.test(form.password) &&
+    /[0-9]/.test(form.password) &&
+    /[!@#$%^&*]/.test(form.password);
 
   const submit = async e => {
     e.preventDefault();
@@ -76,34 +67,20 @@ export default function Signup() {
 
     setLoading(true);
     try {
-      const user = await signup(form.name, form.email, form.password, form.role);
-      navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/editor');
+      await api.post('/signup', {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role
+      });
+      navigate('/login', {
+        state: { message: '✅ Account created! Please check your email to verify your account.' }
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');
     } finally { setLoading(false); }
   };
 
-  if (form.name.trim().length < 2)
-    return setError('Name must be at least 2 characters');
-
-  if (!isPasswordStrong())
-    return setError('Please make your password stronger');
-
-  setLoading(true);
-  try {
-    await api.post('/signup', {
-      name: form.name,
-      email: form.email,
-      password: form.password,
-      role: form.role
-    });
-    navigate('/login', {
-      state: { message: '✅ Account created! Please check your email to verify your account.' }
-    });
-  } catch (err) {
-    setError(err.response?.data?.message || 'Signup failed');
-  } finally { setLoading(false); }
-};
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -136,7 +113,6 @@ export default function Signup() {
             }}>{error}</div>
           )}
 
-          {/* Role toggle */}
           <div style={{ marginBottom: 24 }}>
             <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 8 }}>I am a...</label>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -203,4 +179,4 @@ export default function Signup() {
       </div>
     </div>
   );
-
+}
