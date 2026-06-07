@@ -2,18 +2,79 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+function PasswordStrength({ password }) {
+  const checks = [
+    { label: '8+ characters', valid: password.length >= 8 },
+    { label: 'Uppercase letter', valid: /[A-Z]/.test(password) },
+    { label: 'Number', valid: /[0-9]/.test(password) },
+    { label: 'Special character (!@#$%^&*)', valid: /[!@#$%^&*]/.test(password) },
+  ];
+
+  const score = checks.filter(c => c.valid).length;
+  const color = score <= 1 ? '#EF4444' : score === 2 ? '#F59E0B' : score === 3 ? '#06B6D4' : '#10B981';
+  const label = score <= 1 ? 'Weak' : score === 2 ? 'Fair' : score === 3 ? 'Good' : 'Strong';
+
+  if (!password) return null;
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      {/* Strength bar */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{
+            flex: 1, height: 4, borderRadius: 2,
+            background: i <= score ? color : 'rgba(255,255,255,0.08)',
+            transition: 'background 0.3s'
+          }} />
+        ))}
+      </div>
+      <div style={{ fontSize: 11, color, marginBottom: 8, fontWeight: 600 }}>{label}</div>
+
+      {/* Checklist */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {checks.map(c => (
+          <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>
+              {c.valid ? '✓' : '○'}
+            </span>
+            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>
+              {c.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm]     = useState({ name: '', email: '', password: '', role: 'client' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'client' });
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const isPasswordStrong = () => {
+    return form.password.length >= 8 &&
+      /[A-Z]/.test(form.password) &&
+      /[0-9]/.test(form.password) &&
+      /[!@#$%^&*]/.test(form.password);
+  };
+
   const submit = async e => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError('');
+
+    if (form.name.trim().length < 2)
+      return setError('Name must be at least 2 characters');
+
+    if (!isPasswordStrong())
+      return setError('Please make your password stronger');
+
+    setLoading(true);
     try {
       const user = await signup(form.name, form.email, form.password, form.role);
       navigate(user.role === 'client' ? '/dashboard/client' : '/dashboard/editor');
@@ -81,19 +142,35 @@ export default function Signup() {
               <input className="input" name="name" placeholder="John Doe"
                 value={form.name} onChange={handle} required />
             </div>
+
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 6 }}>Email</label>
               <input className="input" name="email" type="email" placeholder="you@example.com"
                 value={form.email} onChange={handle} required />
             </div>
+
             <div style={{ marginBottom: 24 }}>
               <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 6 }}>Password</label>
-              <input className="input" name="password" type="password" placeholder="Min 6 characters"
-                value={form.password} onChange={handle} required minLength={6} />
+              <div style={{ position: 'relative' }}>
+                <input className="input" name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min 8 chars, uppercase, number, special"
+                  value={form.password} onChange={handle} required
+                  style={{ paddingRight: 40 }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9B9AB8'
+                  }}>{showPassword ? '🙈' : '👁'}</button>
+              </div>
+              <PasswordStrength password={form.password} />
             </div>
 
-            <button className="btn-primary" type="submit" disabled={loading}
-              style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15 }}>
+            <button className="btn-primary" type="submit" disabled={loading || !isPasswordStrong()}
+              style={{
+                width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15,
+                opacity: !isPasswordStrong() ? 0.6 : 1
+              }}>
               {loading ? 'Creating account...' : `Join as ${form.role === 'client' ? 'Client' : 'Editor'} →`}
             </button>
           </form>
