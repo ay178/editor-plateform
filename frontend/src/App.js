@@ -17,6 +17,7 @@ import SmartPricing from './pages/SmartPricing';
 import VideoScorer from './pages/VideoScorer';
 import Wallet from './pages/Wallet';
 import './index.css';
+import VerifyEmail from './pages/VerifyEmail';
 
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth();
@@ -59,6 +60,7 @@ function AppRoutes() {
         <Route path="/browse" element={<BrowseEditors />} />
         <Route path="/editor/:userId" element={<EditorProfile />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/verify-email" element={<VerifyEmail />} /> 
 
         {/* Guest only */}
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />

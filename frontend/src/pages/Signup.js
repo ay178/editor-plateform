@@ -65,6 +65,7 @@ export default function Signup() {
   };
 
   const submit = async e => {
+<<<<<<< Updated upstream
     e.preventDefault();
     setError('');
 
@@ -82,7 +83,32 @@ export default function Signup() {
       setError(err.response?.data?.message || 'Signup failed');
     } finally { setLoading(false); }
   };
+=======
+  e.preventDefault();
+  setError('');
+>>>>>>> Stashed changes
 
+  if (form.name.trim().length < 2)
+    return setError('Name must be at least 2 characters');
+
+  if (!isPasswordStrong())
+    return setError('Please make your password stronger');
+
+  setLoading(true);
+  try {
+    await api.post('/signup', {
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      role: form.role
+    });
+    navigate('/login', {
+      state: { message: '✅ Account created! Please check your email to verify your account.' }
+    });
+  } catch (err) {
+    setError(err.response?.data?.message || 'Signup failed');
+  } finally { setLoading(false); }
+};
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',

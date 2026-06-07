@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -5,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+   const location = useLocation(); 
+  const successMessage = location.state?.message;  
   const [form, setForm]     = useState({ email: '', password: '' });
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,6 +52,14 @@ export default function Login() {
         </div>
 
         <div className="glass" style={{ padding: 32 }}>
+          {successMessage && (
+  <div style={{
+    background: 'rgba(16,185,129,0.1)',
+    border: '1px solid rgba(16,185,129,0.3)',
+    borderRadius: 8, padding: '10px 14px', marginBottom: 20,
+    fontSize: 14, color: '#10B981'
+  }}>{successMessage}</div>
+)}
           {error && (
             <div style={{
               background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
