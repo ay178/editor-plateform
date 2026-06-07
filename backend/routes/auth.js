@@ -13,10 +13,6 @@ router.post('/signup', async (req, res) => {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password || !role)
       return res.status(400).json({ message: 'All fields are required' });
-const { name, email, password, role } = req.body;
-if (!name || !email || !password || !role)
-  return res.status(400).json({ message: 'All fields are required' });
-
 // ── Strong Validation ──
 if (name.trim().length < 2)
   return res.status(400).json({ message: 'Name must be at least 2 characters' });
