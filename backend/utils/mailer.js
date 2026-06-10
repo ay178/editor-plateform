@@ -19,7 +19,7 @@ const sendVerificationEmail = async (email, name, token) => {
   const verifyUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
   
   await transporter.sendMail({
-    from: `"EditHire" <${process.env.EMAIL_USER}>`,
+    from: '"EditHire" <vermaprakhar44@gmail.com>',
     to: email,
     subject: 'Verify your EditHire account',
     html: `

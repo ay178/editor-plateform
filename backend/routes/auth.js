@@ -50,12 +50,14 @@ router.post('/signup', async (req, res) => {
     user.verificationToken = verifyToken;
     user.verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
+    
+sendVerificationEmail(email, name, verifyToken)
+  .then(() => console.log('Email sent to:', email))
+  .catch(err => console.error('Email error:', err.message));
 
-    await sendVerificationEmail(email, name, verifyToken);
-
-    return res.status(201).json({
-      message: 'Account created! Please check your email to verify your account.'
-    });
+return res.status(201).json({
+  message: 'Account created! Please check your email to verify your account.'
+});
 
   } catch (err) {
     res.status(500).json({ message: err.message });
