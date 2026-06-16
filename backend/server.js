@@ -46,6 +46,7 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 // ── Routes ──
+app.use('/api/subscription', require('./routes/subscription'));
 app.use('/api', require('./routes/auth'));
 app.use('/api/editors', require('./routes/editors'));
 app.use('/api/hire', require('./routes/hire'));

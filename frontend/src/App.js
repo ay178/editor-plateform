@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import SubscriptionPage from './pages/SubscriptionPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
@@ -76,6 +77,7 @@ function AppRoutes() {
         <Route path="/wallet" element={
           <ProtectedRoute><Wallet /></ProtectedRoute>
         } />
+        <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
 
         {/* Protected - Editor */}
         <Route path="/dashboard/editor" element={

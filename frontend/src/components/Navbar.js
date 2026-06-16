@@ -61,6 +61,7 @@ export default function Navbar() {
           {user && (
             <>
               <NavLink to="/messages" active={isActive('/messages')} label="Messages" />
+              <NavLink to="/subscription" active={isActive('/subscription')} label="⭐ Pro" />
               <NavLink to="/video-scorer" active={isActive('/video-scorer')} label="🎬 Scorer" />
               <NavLink to="/collab" active={isActive('/collab')} label="🤝 Collab" />
             </>
