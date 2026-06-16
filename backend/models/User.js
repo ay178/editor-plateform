@@ -7,6 +7,11 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['client', 'editor'], required: true },
   avatar: { type: String, default: '' },
+  subscription: {
+  plan: { type: String, enum: ['free', 'pro_client', 'pro_editor'], default: 'free' },
+  validUntil: { type: Date, default: null },
+  razorpaySubscriptionId: { type: String, default: null }
+},
 createdAt: { type: Date, default: Date.now },
   isVerified: { type: Boolean, default: false },
   verificationToken: { type: String },
