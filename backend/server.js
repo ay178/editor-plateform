@@ -8,6 +8,10 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
+const morgan = require('morgan');        // ← add
+const helmet = require('helmet');        // ← add
+const compression = require('compression'); // ← add
+const rateLimit = require('express-rate-limit'); 
 
 const app = express();
 const server = http.createServer(app);
@@ -40,7 +44,27 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+}));// ── API Gateway Middleware ──
+app.use(helmet({ contentSecurityPolicy: false })); // Security headers
+app.use(compression());                             // Response compression
+app.use(morgan('dev'));                             // Request logging
+
+// ── Rate Limiting ──
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Too many attempts, please try again after 15 minutes.' }
+});
+
+app.use('/api', limiter);
+app.use('/api/login', authLimiter);
+app.use('/api/signup', authLimiter);
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
