@@ -1,5 +1,4 @@
 require('dotenv').config();
-const rateLimit = require('express-rate-limit');
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
@@ -44,10 +43,13 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));// ── API Gateway Middleware ──
-app.use(helmet({ contentSecurityPolicy: false })); // Security headers
-app.use(compression());                             // Response compression
-app.use(morgan('dev'));                             // Request logging
+}));
+                         // Request logging
+
+// ── API Gateway ──
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
+app.use(morgan('dev'));
 
 // ── Rate Limiting ──
 const limiter = rateLimit({
@@ -65,25 +67,8 @@ const authLimiter = rateLimit({
 app.use('/api', limiter);
 app.use('/api/login', authLimiter);
 app.use('/api/signup', authLimiter);
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { message: 'Too many requests, please try again later.' }
-});
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { message: 'Too many attempts, please try again after 15 minutes.' }
-});
-
-app.use('/api', limiter);
-app.use('/api/login', authLimiter);
-app.use('/api/signup', authLimiter);
-
-app.use(express.json());
-app.use(express.json());
-
+app.use(express.json()); // sirf ek baar
 // ── Static files ──
 app.use('/uploads', express.static('uploads'));
 
