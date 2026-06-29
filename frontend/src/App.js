@@ -13,7 +13,6 @@ import Messages from './pages/Messages';
 import AIMatch from './pages/AIMatch';
 import Collaboration from './pages/Collaboration';
 import EditorPortfolio from './pages/EditorPortfolio';
-import Pricing from './pages/Pricing';
 import SmartPricing from './pages/SmartPricing';
 import VideoScorer from './pages/VideoScorer';
 import Wallet from './pages/Wallet';
@@ -60,7 +59,6 @@ function AppRoutes() {
         <Route path="/" element={<Landing />} />
         <Route path="/browse" element={<BrowseEditors />} />
         <Route path="/editor/:userId" element={<EditorProfile />} />
-        <Route path="/pricing" element={<Pricing />} />
         <Route path="/verify-email" element={<VerifyEmail />} /> 
 
         {/* Guest only */}

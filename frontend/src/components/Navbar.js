@@ -39,7 +39,6 @@ export default function Navbar() {
         {/* Center links */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <NavLink to="/browse" active={isActive('/browse')} label="Browse" />
-          <NavLink to="/pricing" active={isActive('/pricing')} label="Pricing" />
 
           {user?.role === 'client' && (
             <>
