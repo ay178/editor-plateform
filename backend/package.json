@@ -8,6 +8,7 @@
     "seed": "node config/seed.js"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.10.0",
     "compression": "^1.8.1",

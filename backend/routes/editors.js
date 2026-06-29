@@ -1,82 +1,59 @@
 const express = require('express');
 const router = express.Router();
 const EditorProfile = require('../models/EditorProfile');
-const User = require('../models/User');
-const Review = require('../models/Review');
 const { auth, requireRole } = require('../middleware/auth');
+const redis = require('../utils/redis');
 
-// GET /api/editors - Browse editors with filters
+// GET /api/editors — Browse editors with Redis cache
 router.get('/', async (req, res) => {
   try {
     const { skill, minPrice, maxPrice, minRating, search, sort } = req.query;
-    let filter = {};
-    if (skill) filter.skills = skill;
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = Number(minPrice);
-      if (maxPrice) filter.price.$lte = Number(maxPrice);
+
+    // Cache key based on query params
+    const cacheKey = `editors:${JSON.stringify(req.query)}`;
+
+    // Check cache first
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
     }
-    if (minRating) filter.averageRating = { $gte: Number(minRating) };
 
-    let sortOption = { createdAt: -1 };
-    if (sort === 'rating') sortOption = { averageRating: -1 };
-    if (sort === 'price-asc') sortOption = { price: 1 };
-    if (sort === 'price-desc') sortOption = { price: -1 };
+    // Build query
+    let query = {};
+    if (skill) query.skills = skill;
+    if (minRating) query.averageRating = { $gte: parseFloat(minRating) };
+    if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
+    if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
 
-    let profiles = await EditorProfile.find(filter)
+    let editors = await EditorProfile.find(query)
       .populate('user', 'name email avatar')
-      .sort(sortOption);
+      .lean();
 
+    // Text search
     if (search) {
       const s = search.toLowerCase();
-      profiles = profiles.filter(p =>
-        p.user.name.toLowerCase().includes(s) ||
-        p.bio.toLowerCase().includes(s) ||
-        p.skills.some(sk => sk.includes(s))
+      editors = editors.filter(e =>
+        e.user?.name?.toLowerCase().includes(s) ||
+        e.bio?.toLowerCase().includes(s) ||
+        e.skills?.some(sk => sk.includes(s))
       );
     }
 
-    res.json(profiles);
+    // Sort
+    if (sort === 'rating') editors.sort((a, b) => b.averageRating - a.averageRating);
+    else if (sort === 'price-asc') editors.sort((a, b) => a.price - b.price);
+    else if (sort === 'price-desc') editors.sort((a, b) => b.price - a.price);
+
+    // Cache for 2 minutes
+    await redis.set(cacheKey, JSON.stringify(editors), { ex: 120 });
+
+    res.json(editors);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET /api/editors/:id - Get single editor profile
-router.get('/:id', async (req, res) => {
-  try {
-    const profile = await EditorProfile.findOne({ user: req.params.id })
-      .populate('user', 'name email avatar createdAt');
-    if (!profile) return res.status(404).json({ message: 'Editor not found' });
-
-    const reviews = await Review.find({ editor: req.params.id })
-      .populate('client', 'name avatar')
-      .sort({ createdAt: -1 });
-
-    res.json({ profile, reviews });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// PUT /api/editors/profile - Update editor profile
-router.put('/profile', auth, requireRole('editor'), async (req, res) => {
-  try {
-    const updates = req.body;
-    const profile = await EditorProfile.findOneAndUpdate(
-      { user: req.user._id },
-      updates,
-      { new: true, runValidators: true }
-    ).populate('user', 'name email avatar');
-
-    if (!profile) return res.status(404).json({ message: 'Profile not found' });
-    res.json(profile);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET /api/editors/profile/me - Get own profile
+// GET /api/editors/profile/me
 router.get('/profile/me', auth, requireRole('editor'), async (req, res) => {
   try {
     const profile = await EditorProfile.findOne({ user: req.user._id })
@@ -87,30 +64,48 @@ router.get('/profile/me', auth, requireRole('editor'), async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-// POST /api/editors/portfolio/add
-router.post('/portfolio/add', auth, requireRole('editor'), async (req, res) => {
+
+// GET /api/editors/:userId
+router.get('/:userId', async (req, res) => {
   try {
-    const { title, url, type, thumbnail } = req.body;
-    const profile = await EditorProfile.findOneAndUpdate(
-      { user: req.user._id },
-      { $push: { portfolio: { title, url, type, thumbnail } } },
-      { new: true }
-    ).populate('user', 'name email avatar');
+    const cacheKey = `editor:${req.params.userId}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+    }
+
+    const profile = await EditorProfile.findOne({ user: req.params.userId })
+      .populate('user', 'name email avatar');
+    if (!profile) return res.status(404).json({ message: 'Editor not found' });
+
+    // Cache for 5 minutes
+    await redis.set(cacheKey, JSON.stringify(profile), { ex: 300 });
+
     res.json(profile);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// DELETE /api/editors/portfolio/:index
-router.delete('/portfolio/:index', auth, requireRole('editor'), async (req, res) => {
+// PUT /api/editors/profile
+router.put('/profile', auth, requireRole('editor'), async (req, res) => {
   try {
-    const profile = await EditorProfile.findOne({ user: req.user._id });
-    profile.portfolio.splice(req.params.index, 1);
-    await profile.save();
+    const profile = await EditorProfile.findOneAndUpdate(
+      { user: req.user._id },
+      { $set: req.body },
+      { new: true }
+    ).populate('user', 'name email avatar');
+
+    // Invalidate cache
+    await redis.del(`editor:${req.user._id}`);
+    // Clear editors list cache
+    const keys = await redis.keys('editors:*');
+    if (keys.length > 0) await redis.del(...keys);
+
     res.json(profile);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
 module.exports = router;

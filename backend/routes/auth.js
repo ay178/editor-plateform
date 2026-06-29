@@ -1,4 +1,5 @@
 const express = require('express');
+const redis = require('../utils/redis');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -114,6 +115,16 @@ router.get('/verify-email', async (req, res) => {
 // GET /api/me
 router.get('/me', auth, async (req, res) => {
   res.json({ user: req.user });
+});
+router.post('/logout', auth, async (req, res) => {
+  try {
+    const token = req.token;
+    await redis.set(`blacklist:${token}`, '1', { ex: 7 * 24 * 60 * 60 });
+    await redis.del(`user:${req.user._id}`);
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;
