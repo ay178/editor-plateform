@@ -8,22 +8,39 @@ const auth = async (req, res, next) => {
     if (!token) return res.status(401).json({ message: 'No token, access denied' });
 
     // ── Check token blacklist (logout) ──
-    const isBlacklisted = await redis.get(`blacklist:${token}`);
+    let isBlacklisted = null;
+    try {
+      isBlacklisted = await redis.get(`blacklist:${token}`);
+    } catch (redisErr) {
+      console.error('Redis blacklist check error:', redisErr.message);
+    }
     if (isBlacklisted) return res.status(401).json({ message: 'Token has been invalidated. Please login again.' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // ── Check user cache ──
     const cacheKey = `user:${decoded.id}`;
-    let user = await redis.get(cacheKey);
+    let user = null;
+
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        user = typeof cached === 'string' ? JSON.parse(cached) : cached;
+      }
+    } catch (redisErr) {
+      console.error('Redis get error:', redisErr.message);
+      user = null;
+    }
 
     if (!user) {
       user = await User.findById(decoded.id).select('-password');
       if (!user) return res.status(401).json({ message: 'Token invalid' });
-      // Cache for 5 minutes
-      await redis.set(cacheKey, JSON.stringify(user), { ex: 300 });
-    } else {
-      user = typeof user === 'string' ? JSON.parse(user) : user;
+
+      try {
+        await redis.set(cacheKey, JSON.stringify(user), { ex: 300 });
+      } catch (redisErr) {
+        console.error('Redis set error:', redisErr.message);
+      }
     }
 
     req.user = user;
