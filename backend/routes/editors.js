@@ -13,9 +13,13 @@ router.get('/', async (req, res) => {
     const cacheKey = `editors:${JSON.stringify(req.query)}`;
 
     // Check cache first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+      }
+    } catch (redisErr) {
+      console.error('Redis get error:', redisErr.message);
     }
 
     // Build query
@@ -44,8 +48,12 @@ router.get('/', async (req, res) => {
     else if (sort === 'price-asc') editors.sort((a, b) => a.price - b.price);
     else if (sort === 'price-desc') editors.sort((a, b) => b.price - a.price);
 
-    // Cache for 2 minutes
-    await redis.set(cacheKey, JSON.stringify(editors), { ex: 120 });
+    // Cache for 30 seconds only — keeps data fresh for new signups
+    try {
+      await redis.set(cacheKey, JSON.stringify(editors), { ex: 30 });
+    } catch (redisErr) {
+      console.error('Redis set error:', redisErr.message);
+    }
 
     res.json(editors);
   } catch (err) {
@@ -69,17 +77,25 @@ router.get('/profile/me', auth, requireRole('editor'), async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const cacheKey = `editor:${req.params.userId}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+      }
+    } catch (redisErr) {
+      console.error('Redis get error:', redisErr.message);
     }
 
     const profile = await EditorProfile.findOne({ user: req.params.userId })
       .populate('user', 'name email avatar');
     if (!profile) return res.status(404).json({ message: 'Editor not found' });
 
-    // Cache for 5 minutes
-    await redis.set(cacheKey, JSON.stringify(profile), { ex: 300 });
+    try {
+      await redis.set(cacheKey, JSON.stringify(profile), { ex: 60 });
+    } catch (redisErr) {
+      console.error('Redis set error:', redisErr.message);
+    }
 
     res.json(profile);
   } catch (err) {
@@ -96,11 +112,12 @@ router.put('/profile', auth, requireRole('editor'), async (req, res) => {
       { new: true }
     ).populate('user', 'name email avatar');
 
-    // Invalidate cache
-    await redis.del(`editor:${req.user._id}`);
-    // Clear editors list cache
-    const keys = await redis.keys('editors:*');
-    if (keys.length > 0) await redis.del(...keys);
+    // Invalidate this editor's specific cache
+    try {
+      await redis.del(`editor:${req.user._id}`);
+    } catch (redisErr) {
+      console.error('Redis del error:', redisErr.message);
+    }
 
     res.json(profile);
   } catch (err) {
