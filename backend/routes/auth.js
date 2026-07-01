@@ -42,10 +42,18 @@ router.post('/signup', async (req, res) => {
 
     const user = await User.create({ name, email, password, role });
 
-    if (role === 'editor') {
-      await EditorProfile.create({ user: user._id });
-    }
-
+   if (role === 'editor') {
+  await EditorProfile.create({ user: user._id });
+  
+  // Clear editors list cache
+  try {
+    const keys = await redis.keys('editors:*');
+    if (keys.length > 0) await redis.del(...keys);
+  } catch (err) {
+    console.error('Cache clear error:', err.message);
+  }
+}
+   
     // Email Verification
     const verifyToken = crypto.randomBytes(32).toString('hex');
     user.verificationToken = verifyToken;
