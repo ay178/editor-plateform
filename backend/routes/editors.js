@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
     let editors = await EditorProfile.find(query)
       .populate('user', 'name email avatar')
       .lean();
-
+editors = editors.filter(e => e.user);
     // Text search
     if (search) {
       const s = search.toLowerCase();
