@@ -42,18 +42,21 @@ const EditorProfile = () => {
     fetchProfile();
   }, [id]);
 
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const { data } = await API.get(`/editors/${id}`);
-      setProfile(data.profile);
-      setReviews(data.reviews);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+ const fetchProfile = async () => {
+  try {
+    setLoading(true);
+    const [profileRes, reviewsRes] = await Promise.all([
+      API.get(`/editors/${id}`),
+      API.get(`/review/editor/${id}`)
+    ]);
+    setProfile(profileRes.data);
+    setReviews(reviewsRes.data);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleHireSubmit = async () => {
     if (!hireForm.projectTitle || !hireForm.description) {
