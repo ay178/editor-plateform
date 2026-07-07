@@ -44,10 +44,35 @@ editors = editors.filter(e => e.user);
     }
 
     // Sort
-    if (sort === 'rating') editors.sort((a, b) => b.averageRating - a.averageRating);
-    else if (sort === 'price-asc') editors.sort((a, b) => a.price - b.price);
-    else if (sort === 'price-desc') editors.sort((a, b) => b.price - a.price);
+   if (sort === 'rating' || !sort) {
+  // Rated editors (jinke reviews hain) — rating ke hisaab se sort
+  const rated = editors.filter(e => e.totalReviews > 0);
+  rated.sort((a, b) => b.averageRating - a.averageRating);
 
+  // Naye editors (koi review nahi) — har baar shuffle taaki different editors rotate ho top pe
+  const newOnes = editors.filter(e => e.totalReviews === 0);
+  for (let i = newOnes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newOnes[i], newOnes[j]] = [newOnes[j], newOnes[i]];
+  }
+
+  // Interleave — har 4 rated editors ke baad 1 naya editor dikhao
+  const merged = [];
+  let newIdx = 0;
+  rated.forEach((editor, i) => {
+    merged.push(editor);
+    if ((i + 1) % 4 === 0 && newIdx < newOnes.length) {
+      merged.push(newOnes[newIdx++]);
+    }
+  });
+  while (newIdx < newOnes.length) merged.push(newOnes[newIdx++]);
+
+  editors = merged;
+} else if (sort === 'price-asc') {
+  editors.sort((a, b) => a.price - b.price);
+} else if (sort === 'price-desc') {
+  editors.sort((a, b) => b.price - a.price);
+}
     // Cache for 30 seconds only — keeps data fresh for new signups
     try {
       await redis.set(cacheKey, JSON.stringify(editors), { ex: 30 });

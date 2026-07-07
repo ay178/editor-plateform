@@ -241,9 +241,19 @@ function EditorCard({ editor, onHire }) {
           <div style={{ fontWeight: 600, fontSize: 15 }}>{editor.user?.name}</div>
           <div style={{ fontSize: 12, color: '#9B9AB8', marginTop: 2 }}>{editor.location || 'Remote'}</div>
           <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Stars n={editor.averageRating} />
-            <span style={{ fontSize: 12, color: '#9B9AB8' }}>{editor.averageRating?.toFixed(1)} ({editor.totalReviews})</span>
-          </div>
+  {editor.totalReviews === 0 ? (
+    <span style={{
+      background: 'rgba(6,182,212,0.15)', color: '#06B6D4',
+      border: '1px solid rgba(6,182,212,0.3)', borderRadius: 20,
+      padding: '2px 8px', fontSize: 11, fontWeight: 600
+    }}>🆕 New to EditHire</span>
+  ) : (
+    <>
+      <Stars n={editor.averageRating} />
+      <span style={{ fontSize: 12, color: '#9B9AB8' }}>{editor.averageRating?.toFixed(1)} ({editor.totalReviews})</span>
+    </>
+  )}
+</div>
         </div>
         <div style={{
           background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)',
