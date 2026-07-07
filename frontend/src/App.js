@@ -58,7 +58,7 @@ function AppRoutes() {
         {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/browse" element={<BrowseEditors />} />
-        <Route path="/editor/:userId" element={<EditorProfile />} />
+        <Route path="/editor/:id" element={<EditorProfile />} />
         <Route path="/verify-email" element={<VerifyEmail />} /> 
 
         {/* Guest only */}
