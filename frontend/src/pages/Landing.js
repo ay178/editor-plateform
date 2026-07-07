@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
+import { useAuth } from '../context/AuthContext';
 const WORDS = ['YouTube Videos', 'Short Films', 'Brand Ads', 'Reels & TikToks', 'Documentaries'];
 
 export default function Landing() {
+    const { user } = useAuth(); 
   const [wordIdx, setWordIdx] = useState(0);
 
   useEffect(() => {
@@ -56,18 +57,20 @@ export default function Landing() {
           </p>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/browse">
-              <button className="btn-primary" style={{ padding: '14px 32px', fontSize: 16 }}>
-                Browse Editors →
-              </button>
-            </Link>
-            <Link to="/signup">
-              <button className="btn-ghost" style={{ padding: '14px 32px', fontSize: 16 }}>
-                Join as Editor
-              </button>
-            </Link>
-          </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+  <Link to="/browse">
+    <button className="btn-primary" style={{ padding: '14px 32px', fontSize: 16 }}>
+      Browse Editors →
+    </button>
+  </Link>
+  {!user && (
+    <Link to="/signup">
+      <button className="btn-ghost" style={{ padding: '14px 32px', fontSize: 16 }}>
+        Join as Editor
+      </button>
+    </Link>
+  )}
+</div>
 
           {/* Stats */}
           <div style={{ display: 'flex', gap: 40, justifyContent: 'center', marginTop: 64, flexWrap: 'wrap' }}>
@@ -126,9 +129,11 @@ export default function Landing() {
           }}>
             <h2 style={{ fontSize: 36, fontWeight: 700, marginBottom: 12 }}>Ready to Hire Your Editor?</h2>
             <p style={{ color: '#9B9AB8', marginBottom: 32, fontSize: 16 }}>Join thousands of creators who ship faster with EditHire</p>
-            <Link to="/signup">
-              <button className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>Start For Free →</button>
-            </Link>
+           <Link to={user ? (user.role === 'client' ? '/browse' : '/dashboard/editor') : '/signup'}>
+  <button className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>
+    {user ? (user.role === 'client' ? 'Browse Editors →' : 'Go to Dashboard →') : 'Start For Free →'}
+  </button>
+</Link>
           </div>
         </div>
       </section>
