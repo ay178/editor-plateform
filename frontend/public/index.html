@@ -36,6 +36,110 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+
+    <!-- ===== EditHire Splash Screen — shows while the page first loads ===== -->
+    <div id="edithire-splash">
+      <svg width="120" height="120" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="splashTriGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#06B6D4"/>
+            <stop offset="55%" stop-color="#7C3AED"/>
+            <stop offset="100%" stop-color="#C026D3"/>
+          </linearGradient>
+        </defs>
+        <rect x="180" y="140" width="150" height="55" fill="#F1F0FF" class="splash-bar splash-bar-top"/>
+        <rect x="180" y="317" width="150" height="55" fill="#F1F0FF" class="splash-bar splash-bar-bottom"/>
+        <path d="M 180 140 L 180 372 L 370 256 Z" fill="url(#splashTriGrad)" class="splash-tri"/>
+      </svg>
+      <div id="edithire-splash-text">Edit<span>Hire</span></div>
+    </div>
+
+    <style>
+      #edithire-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: #0F0F1A;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+      }
+
+      #edithire-splash.splash-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #edithire-splash svg {
+        animation: splash-pulse 1.4s ease-in-out infinite;
+      }
+
+      .splash-bar {
+        animation: splash-slide-in 0.6s ease-out both;
+      }
+      .splash-bar-top { animation-delay: 0.05s; }
+      .splash-bar-bottom { animation-delay: 0.2s; }
+      .splash-tri {
+        animation: splash-fade-in 0.5s ease-out 0.35s both;
+        transform-origin: 180px 256px;
+      }
+
+      #edithire-splash-text {
+        font-family: 'DM Sans', Arial, sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: #F1F0FF;
+        letter-spacing: 0.5px;
+        opacity: 0;
+        animation: splash-fade-in 0.5s ease-out 0.5s forwards;
+      }
+      #edithire-splash-text span { color: #9F67FF; }
+
+      @keyframes splash-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+
+      @keyframes splash-slide-in {
+        from { opacity: 0; transform: translateX(-16px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+
+      @keyframes splash-fade-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+    </style>
+
+    <script>
+      (function () {
+        function hideSplash() {
+          var splash = document.getElementById('edithire-splash');
+          if (!splash) return;
+          splash.classList.add('splash-hidden');
+          setTimeout(function () { splash.remove(); }, 450);
+        }
+
+        var root = document.getElementById('root');
+        if (root) {
+          var observer = new MutationObserver(function () {
+            if (root.children.length > 0) {
+              observer.disconnect();
+              hideSplash();
+            }
+          });
+          observer.observe(root, { childList: true });
+        }
+
+        setTimeout(hideSplash, 3500);
+      })();
+    </script>
+    <!-- ===== End Splash Screen ===== -->
+
     <div id="root"></div>
   </body>
 </html>

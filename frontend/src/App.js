@@ -19,23 +19,42 @@ import Wallet from './pages/Wallet';
 import './index.css';
 import VerifyEmail from './pages/VerifyEmail';
 
+// Replace the existing ProtectedRoute loading block in frontend/src/App.js with this.
+// Find the function ProtectedRoute({ children, role }) { ... } block and swap in
+// this "if (loading) return (...)" section.
+
 function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth();
+
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#0F0F1A'
+    }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          border: '3px solid rgba(124,58,237,0.2)',
-          borderTop: '3px solid #7C3AED',
-          animation: 'spin 0.8s linear infinite',
-          margin: '0 auto 12px'
-        }} />
-        <p style={{ color: '#9B9AB8', fontSize: 14 }}>Loading...</p>
+        <svg width="72" height="72" viewBox="0 0 512 512" style={{ animation: 'edithireLoaderPulse 1.4s ease-in-out infinite' }}>
+          <defs>
+            <linearGradient id="loaderTriGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#06B6D4" />
+              <stop offset="55%" stopColor="#7C3AED" />
+              <stop offset="100%" stopColor="#C026D3" />
+            </linearGradient>
+          </defs>
+          <rect x="180" y="140" width="150" height="55" fill="#F1F0FF" />
+          <rect x="180" y="317" width="150" height="55" fill="#F1F0FF" />
+          <path d="M 180 140 L 180 372 L 370 256 Z" fill="url(#loaderTriGrad)" />
+        </svg>
+        <p style={{ color: '#9B9AB8', fontSize: 14, marginTop: 16 }}>Loading...</p>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes edithireLoaderPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.08); opacity: 0.75; }
+        }
+      `}</style>
     </div>
   );
+
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) {
     return <Navigate to={user.role === 'client' ? '/dashboard/client' : '/dashboard/editor'} replace />;
