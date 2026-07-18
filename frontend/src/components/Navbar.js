@@ -24,7 +24,6 @@ export default function Navbar() {
   return (
     <nav style={navStyle}>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-```javascript
   {/* Logo */}
         <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
           <img src="/logo192.png" alt="EditHire" style={{ width: 32, height: 32, objectFit: 'contain' }} />
