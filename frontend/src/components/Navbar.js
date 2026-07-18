@@ -24,15 +24,11 @@ export default function Navbar() {
   return (
     <nav style={navStyle}>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-
-        {/* Logo */}
+```javascript
+  {/* Logo */}
         <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'linear-gradient(135deg, #7C3AED, #06B6D4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 700, color: '#fff'
-          }}>E</div>
+          <img src="/logo192.png" alt="EditHire" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+```
           <span style={{ fontWeight: 700, fontSize: 18, color: '#F1F0FF' }}>Edit<span style={{ color: '#7C3AED' }}>Hire</span></span>
         </Link>
 

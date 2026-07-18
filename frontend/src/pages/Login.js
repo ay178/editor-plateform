@@ -41,12 +41,7 @@ export default function Login() {
       <div style={{ width: '100%', maxWidth: 420, padding: '0 20px', position: 'relative', zIndex: 1 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 12, margin: '0 auto 12px',
-            background: 'linear-gradient(135deg, #7C3AED, #06B6D4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, fontWeight: 700, color: '#fff'
-          }}>E</div>
+        <img src="/logo192.png" alt="EditHire" style={{ width: 48, height: 48, objectFit: 'contain', margin: '0 auto 12px', display: 'block' }} />
           <h1 style={{ fontSize: 26, fontWeight: 700 }}>Welcome back</h1>
           <p style={{ color: '#9B9AB8', fontSize: 14, marginTop: 4 }}>Sign in to your EditHire account</p>
         </div>
