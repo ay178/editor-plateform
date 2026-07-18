@@ -27,7 +27,6 @@ export default function Navbar() {
   {/* Logo */}
         <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
           <img src="/logo192.png" alt="EditHire" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-```
           <span style={{ fontWeight: 700, fontSize: 18, color: '#F1F0FF' }}>Edit<span style={{ color: '#7C3AED' }}>Hire</span></span>
         </Link>
 
