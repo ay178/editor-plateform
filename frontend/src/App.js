@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import SubscriptionPage from './pages/SubscriptionPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
@@ -75,6 +77,8 @@ function AppRoutes() {
       <Navbar />
       <Routes>
         {/* Public */}
+        <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+<Route path="/reset-password" element={<GuestRoute><ResetPassword /></GuestRoute>} />
         <Route path="/" element={<Landing />} />
         <Route path="/browse" element={<BrowseEditors />} />
         <Route path="/editor/:id" element={<EditorProfile />} />

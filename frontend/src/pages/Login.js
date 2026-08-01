@@ -73,6 +73,11 @@ export default function Login() {
               <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 6 }}>Password</label>
               <input className="input" name="password" type="password" placeholder="••••••••"
                 value={form.password} onChange={handle} required />
+                <div style={{ textAlign: 'right', marginTop: 6 }}>
+  <Link to="/forgot-password" style={{ color: '#9B9AB8', fontSize: 12.5, textDecoration: 'none' }}>
+    Forgot password?
+  </Link>
+</div>
             </div>
 
             <button className="btn-primary" type="submit" disabled={loading}
