@@ -34,12 +34,14 @@ if (!fs.existsSync('uploads')) {
 
 // ── Middleware ──
 app.use(cors({
-  origin: [
-    'https://editor-plateform-uvr1.vercel.app',
-    'https://editor-plateform-vermaprakhar44-9325s-projects.vercel.app',
-    'https://editorhire.vercel.app',
-    'http://localhost:3000'
-  ],
+ origin: [
+  'https://editor-plateform-uvr1.vercel.app',
+  'https://editor-plateform-vermaprakhar44-9325s-projects.vercel.app',
+  'https://editorhire.vercel.app',
+  'https://edithire.online',
+  'https://www.edithire.online',
+  'http://localhost:3000'
+],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
