@@ -77,8 +77,6 @@ function AppRoutes() {
       <Navbar />
       <Routes>
         {/* Public */}
-        <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-<Route path="/reset-password" element={<GuestRoute><ResetPassword /></GuestRoute>} />
         <Route path="/" element={<Landing />} />
         <Route path="/browse" element={<BrowseEditors />} />
         <Route path="/editor/:id" element={<EditorProfile />} />
@@ -86,6 +84,8 @@ function AppRoutes() {
 
         {/* Guest only */}
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+        <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+<Route path="/reset-password" element={<GuestRoute><ResetPassword /></GuestRoute>} />
         <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
 
         {/* Protected - Client */}
