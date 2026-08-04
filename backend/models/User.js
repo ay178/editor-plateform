@@ -4,7 +4,10 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true },
+  password: {
+    type: String,
+    required: function () { return this.authProvider === 'local'; }
+  },
   role: { type: String, enum: ['client', 'editor'], required: true },
   avatar: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
@@ -13,6 +16,8 @@ const userSchema = new mongoose.Schema({
   verificationTokenExpiry: { type: Date },
   resetPasswordToken: { type: String },
   resetPasswordExpiry: { type: Date },
+  authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+  googleId: { type: String, default: null },
   subscription: {
     plan: { type: String, enum: ['free', 'pro_client', 'pro_editor'], default: 'free' },
     validUntil: { type: Date, default: null },
@@ -21,12 +26,13 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
 userSchema.methods.comparePassword = async function (password) {
+  if (!this.password) return false; // Google-only accounts have no password
   return bcrypt.compare(password, this.password);
 };
 

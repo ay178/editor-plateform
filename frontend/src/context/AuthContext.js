@@ -13,7 +13,6 @@ export const AuthProvider = ({ children }) => {
       api.get('/me')
         .then(res => {
           const u = res.data.user;
-          // Normalize _id
           setUser({ ...u, _id: u._id || u.id });
         })
         .catch(() => localStorage.removeItem('token'))
@@ -41,13 +40,22 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
+  // Used by GoogleButton — the backend already returned a valid token + user
+  // in one shot, so this just stores it without making another API call.
+  const setUserDirectly = (token, userObj) => {
+    localStorage.setItem('token', token);
+    const userData = { ...userObj, _id: userObj._id || userObj.id };
+    setUser(userData);
+    return userData;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, setUserDirectly }}>
       {children}
     </AuthContext.Provider>
   );

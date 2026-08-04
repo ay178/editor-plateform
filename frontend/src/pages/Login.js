@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GoogleButton from '../components/GoogleButton';
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,7 +30,6 @@ export default function Login() {
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative', overflow: 'hidden'
     }}>
-      {/* BG blob */}
       <div style={{
         position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
         width: 600, height: 400, borderRadius: '50%',
@@ -38,7 +38,6 @@ export default function Login() {
       }} />
 
       <div style={{ width: '100%', maxWidth: 420, padding: '0 20px', position: 'relative', zIndex: 1 }}>
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <img src="/logo192.png" alt="EditHire" style={{ width: 48, height: 48, objectFit: 'contain', margin: '0 auto 12px', display: 'block' }} />
           <h1 style={{ fontSize: 26, fontWeight: 700 }}>Welcome back</h1>
@@ -59,6 +58,14 @@ export default function Login() {
               borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 14, color: '#EF4444'
             }}>{error}</div>
           )}
+
+          <GoogleButton onError={setError} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ fontSize: 12, color: '#5C5B7A' }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+          </div>
 
           <form onSubmit={submit}>
             <div style={{ marginBottom: 16 }}>

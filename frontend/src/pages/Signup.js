@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import GoogleButton from '../components/GoogleButton';
 
 function PasswordStrength({ password }) {
   const checks = [
@@ -31,8 +32,12 @@ function PasswordStrength({ password }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {checks.map(c => (
           <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>{c.valid ? '✓' : '○'}</span>
-            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>{c.label}</span>
+            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>
+              {c.valid ? '✓' : '○'}
+            </span>
+            <span style={{ fontSize: 11, color: c.valid ? '#10B981' : '#5C5B7A' }}>
+              {c.label}
+            </span>
           </div>
         ))}
       </div>
@@ -95,7 +100,7 @@ export default function Signup() {
 
       <div style={{ width: '100%', maxWidth: 440, padding: '0 20px', position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-           <img src="/logo192.png" alt="EditHire" style={{ width: 48, height: 48, objectFit: 'contain', margin: '0 auto 12px', display: 'block' }} />
+          <img src="/logo192.png" alt="EditHire" style={{ width: 48, height: 48, objectFit: 'contain', margin: '0 auto 12px', display: 'block' }} />
           <h1 style={{ fontSize: 26, fontWeight: 700 }}>Create your account</h1>
           <p style={{ color: '#9B9AB8', fontSize: 14, marginTop: 4 }}>Join the EditHire community</p>
         </div>
@@ -108,7 +113,8 @@ export default function Signup() {
             }}>{error}</div>
           )}
 
-          <div style={{ marginBottom: 24 }}>
+          {/* Role toggle — chosen BEFORE Google button so Google signup knows the role too */}
+          <div style={{ marginBottom: 20 }}>
             <label style={{ fontSize: 13, color: '#9B9AB8', display: 'block', marginBottom: 8 }}>I am a...</label>
             <div style={{ display: 'flex', gap: 8 }}>
               {['client', 'editor'].map(r => (
@@ -126,6 +132,14 @@ export default function Signup() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <GoogleButton role={form.role} onError={setError} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ fontSize: 12, color: '#5C5B7A' }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
           </div>
 
           <form onSubmit={submit}>

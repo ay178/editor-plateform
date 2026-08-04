@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const EditorProfile = require('../models/EditorProfile');
 const { auth } = require('../middleware/auth');
@@ -9,6 +10,7 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/mail
 const redis = require('../utils/redis');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // POST /api/signup
 router.post('/signup', async (req, res) => {
@@ -40,19 +42,17 @@ router.post('/signup', async (req, res) => {
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
 
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({ name, email, password, role, authProvider: 'local' });
 
     if (role === 'editor') {
       await EditorProfile.create({ user: user._id });
     }
 
-    // Email Verification
     const verifyToken = crypto.randomBytes(32).toString('hex');
     user.verificationToken = verifyToken;
     user.verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
 
-    // Send async — don't block the signup response on email delivery
     sendVerificationEmail(email, name, verifyToken)
       .then(() => console.log('Verification email sent to:', email))
       .catch(err => console.error('Verification email error:', err.message));
@@ -86,6 +86,72 @@ router.post('/login', async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+// POST /api/google-auth — Google Sign-In / Sign-Up
+// Body: { credential, role }
+//   - role is required only when this is a brand-new account
+//     (i.e. sent from the Signup page, which already has a role toggle)
+//   - Login page calls this WITHOUT role — if no account exists,
+//     the user is told to sign up first instead of silently creating one
+// ────────────────────────────────────────────────────────────
+router.post('/google-auth', async (req, res) => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential) return res.status(400).json({ message: 'Missing Google credential' });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, name, picture, sub: googleId } = payload;
+
+    if (!email) return res.status(400).json({ message: 'Google account has no email' });
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Existing account — log them in regardless of how they originally signed up.
+      // If they'd previously signed up with a password, this just links the Google ID too.
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = user.authProvider || 'google';
+        if (!user.avatar) user.avatar = picture || '';
+        await user.save();
+      }
+    } else {
+      // New account — only allowed if a role was supplied (i.e. came from Signup page)
+      if (!role || !['client', 'editor'].includes(role)) {
+        return res.status(404).json({ message: 'No account found with this Google email. Please sign up first.' });
+      }
+
+      user = await User.create({
+        name,
+        email,
+        role,
+        authProvider: 'google',
+        googleId,
+        avatar: picture || '',
+        isVerified: true, // Google has already verified this email
+      });
+
+      if (role === 'editor') {
+        await EditorProfile.create({ user: user._id });
+      }
+    }
+
+    const token = generateToken(user._id);
+    res.json({
+      token,
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar }
+    });
+
+  } catch (err) {
+    console.error('Google auth error:', err.message);
+    res.status(500).json({ message: 'Google sign-in failed. Please try again.' });
   }
 });
 
@@ -125,27 +191,24 @@ router.get('/verify-email', async (req, res) => {
   }
 });
 
-// ────────────────────────────────────────────────────────────
-// POST /api/forgot-password — request a reset link
-// ────────────────────────────────────────────────────────────
+// POST /api/forgot-password
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
     const user = await User.findOne({ email });
-
-    // Always return the same message whether or not the email exists —
-    // prevents attackers from using this endpoint to discover registered emails.
     const genericMessage = 'If an account exists with that email, a password reset link has been sent.';
 
-    if (!user) {
-      return res.json({ message: genericMessage });
+    if (!user) return res.json({ message: genericMessage });
+
+    if (user.authProvider === 'google' && !user.password) {
+      return res.json({ message: 'This account signs in with Google. Please use "Continue with Google" instead.' });
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpiry = Date.now() + 60 * 60 * 1000; // 1 hour
+    user.resetPasswordExpiry = Date.now() + 60 * 60 * 1000;
     await user.save();
 
     sendPasswordResetEmail(email, user.name, resetToken)
@@ -159,9 +222,7 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// ────────────────────────────────────────────────────────────
-// POST /api/reset-password — set a new password using the token
-// ────────────────────────────────────────────────────────────
+// POST /api/reset-password
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -189,17 +250,13 @@ router.post('/reset-password', async (req, res) => {
     if (!user)
       return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' });
 
-    user.password = password; // pre-save hook in User.js re-hashes this automatically
+    user.password = password;
+    user.authProvider = 'local';
     user.resetPasswordToken = undefined;
     user.resetPasswordExpiry = undefined;
     await user.save();
 
-    // Invalidate any existing sessions for this user for safety
-    try {
-      await redis.del(`user:${user._id}`);
-    } catch (e) {
-      console.error('Redis cleanup error:', e.message);
-    }
+    try { await redis.del(`user:${user._id}`); } catch (e) { console.error('Redis cleanup error:', e.message); }
 
     res.json({ message: 'Password reset successfully! You can now login with your new password.' });
 
