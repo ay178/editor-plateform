@@ -19,8 +19,6 @@ import SmartPricing from './pages/SmartPricing';
 import VideoScorer from './pages/VideoScorer';
 import Wallet from './pages/Wallet';
 import './index.css';
-import VerifyEmail from './pages/VerifyEmail';
-
 // Replace the existing ProtectedRoute loading block in frontend/src/App.js with this.
 // Find the function ProtectedRoute({ children, role }) { ... } block and swap in
 // this "if (loading) return (...)" section.
@@ -80,8 +78,6 @@ function AppRoutes() {
         <Route path="/" element={<Landing />} />
         <Route path="/browse" element={<BrowseEditors />} />
         <Route path="/editor/:id" element={<EditorProfile />} />
-        <Route path="/verify-email" element={<VerifyEmail />} /> 
-
         {/* Guest only */}
         <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
         <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />

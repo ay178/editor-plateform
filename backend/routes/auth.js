@@ -6,13 +6,25 @@ const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const EditorProfile = require('../models/EditorProfile');
 const { auth } = require('../middleware/auth');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/mailer');
+const { sendOTPEmail, sendPasswordResetEmail } = require('../utils/mailer');
 const redis = require('../utils/redis');
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// POST /api/signup
+const generateOTP = () => String(Math.floor(100000 + Math.random() * 900000));
+
+const validatePassword = (password) => {
+  if (password.length < 8) return 'Password must be at least 8 characters';
+  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
+  if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
+  if (!/[!@#$%^&*]/.test(password)) return 'Password must contain at least one special character (!@#$%^&*)';
+  return null;
+};
+
+// ────────────────────────────────────────────────────────────
+// POST /api/signup — creates the (unverified) account and emails a 6-digit OTP
+// ────────────────────────────────────────────────────────────
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -27,39 +39,99 @@ router.post('/signup', async (req, res) => {
     if (!emailRegex.test(email))
       return res.status(400).json({ message: 'Invalid email address' });
 
-    if (password.length < 8)
-      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    const pwError = validatePassword(password);
+    if (pwError) return res.status(400).json({ message: pwError });
 
-    if (!/[A-Z]/.test(password))
-      return res.status(400).json({ message: 'Password must contain at least one uppercase letter' });
+    let user = await User.findOne({ email });
 
-    if (!/[0-9]/.test(password))
-      return res.status(400).json({ message: 'Password must contain at least one number' });
-
-    if (!/[!@#$%^&*]/.test(password))
-      return res.status(400).json({ message: 'Password must contain at least one special character (!@#$%^&*)' });
-
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: 'Email already registered' });
-
-    const user = await User.create({ name, email, password, role, authProvider: 'local' });
-
-    if (role === 'editor') {
-      await EditorProfile.create({ user: user._id });
+    if (user && user.isVerified) {
+      return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const verifyToken = crypto.randomBytes(32).toString('hex');
-    user.verificationToken = verifyToken;
-    user.verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
-    await user.save();
+    if (user && !user.isVerified) {
+      // They started signup before but never verified — refresh their details + resend OTP
+      user.name = name;
+      user.password = password;
+      user.role = role;
+      await user.save();
+    } else {
+      user = await User.create({ name, email, password, role, authProvider: 'local' });
+      if (role === 'editor') {
+        await EditorProfile.create({ user: user._id });
+      }
+    }
 
-    sendVerificationEmail(email, name, verifyToken)
-      .then(() => console.log('Verification email sent to:', email))
-      .catch(err => console.error('Verification email error:', err.message));
+    const otp = generateOTP();
+    await redis.set(`otp:${email}`, otp, { ex: 600 }); // 10 minutes
+
+    sendOTPEmail(email, name, otp)
+      .then(() => console.log('OTP email sent to:', email))
+      .catch(err => console.error('OTP email error:', err.message));
 
     return res.status(201).json({
-      message: 'Account created! Please check your email to verify your account.'
+      message: 'Account created! Enter the code we emailed you to verify.',
+      email
     });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+// POST /api/verify-otp — checks the code, verifies the account, logs them in
+// ────────────────────────────────────────────────────────────
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: 'Email and code are required' });
+
+    const stored = await redis.get(`otp:${email}`);
+    if (!stored) return res.status(400).json({ message: 'Code expired. Please request a new one.' });
+
+    if (String(stored) !== String(otp)) {
+      return res.status(400).json({ message: 'Incorrect code. Please try again.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'Account not found' });
+
+    user.isVerified = true;
+    await user.save();
+    await redis.del(`otp:${email}`);
+
+    const token = generateToken(user._id);
+    res.json({
+      message: 'Email verified!',
+      token,
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+// POST /api/resend-otp
+// ────────────────────────────────────────────────────────────
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'Account not found' });
+    if (user.isVerified) return res.status(400).json({ message: 'Account already verified' });
+
+    const otp = generateOTP();
+    await redis.set(`otp:${email}`, otp, { ex: 600 });
+
+    sendOTPEmail(email, user.name, otp)
+      .then(() => console.log('OTP resent to:', email))
+      .catch(err => console.error('OTP resend error:', err.message));
+
+    res.json({ message: 'A new code has been sent to your email.' });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -76,7 +148,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
 
     if (!user.isVerified)
-      return res.status(401).json({ message: 'Please verify your email first. Check your inbox!' });
+      return res.status(401).json({ message: 'Please verify your email first.', needsVerification: true, email: user.email });
 
     const token = generateToken(user._id);
     res.json({
@@ -90,12 +162,8 @@ router.post('/login', async (req, res) => {
 });
 
 // ────────────────────────────────────────────────────────────
-// POST /api/google-auth — Google Sign-In / Sign-Up
-// Body: { credential, role }
-//   - role is required only when this is a brand-new account
-//     (i.e. sent from the Signup page, which already has a role toggle)
-//   - Login page calls this WITHOUT role — if no account exists,
-//     the user is told to sign up first instead of silently creating one
+// POST /api/google-auth — Google Sign-In / Sign-Up (unaffected by OTP change —
+// Google-verified emails skip OTP entirely since Google already confirmed them)
 // ────────────────────────────────────────────────────────────
 router.post('/google-auth', async (req, res) => {
   try {
@@ -114,28 +182,24 @@ router.post('/google-auth', async (req, res) => {
     let user = await User.findOne({ email });
 
     if (user) {
-      // Existing account — log them in regardless of how they originally signed up.
-      // If they'd previously signed up with a password, this just links the Google ID too.
       if (!user.googleId) {
         user.googleId = googleId;
         user.authProvider = user.authProvider || 'google';
         if (!user.avatar) user.avatar = picture || '';
+        if (!user.isVerified) user.isVerified = true;
         await user.save();
       }
     } else {
-      // New account — only allowed if a role was supplied (i.e. came from Signup page)
       if (!role || !['client', 'editor'].includes(role)) {
         return res.status(404).json({ message: 'No account found with this Google email. Please sign up first.' });
       }
 
       user = await User.create({
-        name,
-        email,
-        role,
+        name, email, role,
         authProvider: 'google',
         googleId,
         avatar: picture || '',
-        isVerified: true, // Google has already verified this email
+        isVerified: true,
       });
 
       if (role === 'editor') {
@@ -162,30 +226,6 @@ router.post('/logout', auth, async (req, res) => {
     await redis.set(`blacklist:${token}`, '1', { ex: 7 * 24 * 60 * 60 });
     await redis.del(`user:${req.user._id}`);
     res.json({ message: 'Logged out successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET /api/verify-email
-router.get('/verify-email', async (req, res) => {
-  try {
-    const { token } = req.query;
-    const user = await User.findOne({
-      verificationToken: token,
-      verificationTokenExpiry: { $gt: Date.now() }
-    });
-
-    if (!user)
-      return res.status(400).json({ message: 'Invalid or expired verification link' });
-
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpiry = undefined;
-    await user.save();
-
-    res.json({ message: 'Email verified successfully! You can now login.' });
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -230,17 +270,8 @@ router.post('/reset-password', async (req, res) => {
     if (!token || !password)
       return res.status(400).json({ message: 'Token and new password are required' });
 
-    if (password.length < 8)
-      return res.status(400).json({ message: 'Password must be at least 8 characters' });
-
-    if (!/[A-Z]/.test(password))
-      return res.status(400).json({ message: 'Password must contain at least one uppercase letter' });
-
-    if (!/[0-9]/.test(password))
-      return res.status(400).json({ message: 'Password must contain at least one number' });
-
-    if (!/[!@#$%^&*]/.test(password))
-      return res.status(400).json({ message: 'Password must contain at least one special character (!@#$%^&*)' });
+    const pwError = validatePassword(password);
+    if (pwError) return res.status(400).json({ message: pwError });
 
     const user = await User.findOne({
       resetPasswordToken: token,

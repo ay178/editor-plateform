@@ -12,8 +12,6 @@ const userSchema = new mongoose.Schema({
   avatar: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
   isVerified: { type: Boolean, default: false },
-  verificationToken: { type: String },
-  verificationTokenExpiry: { type: Date },
   resetPasswordToken: { type: String },
   resetPasswordExpiry: { type: Date },
   authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
@@ -32,7 +30,7 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.comparePassword = async function (password) {
-  if (!this.password) return false; // Google-only accounts have no password
+  if (!this.password) return false;
   return bcrypt.compare(password, this.password);
 };
 
