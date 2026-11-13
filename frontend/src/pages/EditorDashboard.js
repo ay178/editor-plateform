@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { RequestCard } from './ClientDashboard';
+import Icon from'../components/Icon';
 
 const SKILLS = ['video-editing', 'color-grading', 'motion-graphics', 'sound-design', 'thumbnail-design', 'animation', 'photo-editing'];
 
@@ -96,7 +97,7 @@ export default function EditorDashboard() {
           </div>
           <div style={{ marginLeft: 'auto' }}>
             <span className={profile?.availability ? 'chip-cyan' : 'chip'}>
-              {profile?.availability ? '🟢 Available' : '🔴 Unavailable'}
+              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 8, background: profile?.availability ? '#10B981' : '#EF4444' }} />{profile?.availability ? 'Available' : 'Unavailable'}
             </span>
           </div>
         </div>
@@ -119,9 +120,9 @@ export default function EditorDashboard() {
         {/* Main Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 12 }}>
           {[
-            { id: 'requests', label: '📋 Hire Requests' },
-            { id: 'profile', label: '👤 My Profile' },
-            { id: 'wallet', label: '💰 Wallet' },
+            { id: 'requests', label: 'Hire Requests' },
+            { id: 'profile', label: 'My Profile' },
+            { id: 'wallet', label: 'Wallet' },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -148,7 +149,7 @@ export default function EditorDashboard() {
             </div>
             {filtered.length === 0
               ? <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+                  <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="inbox"size={34} /></div>
                   <p style={{ color: '#9B9AB8' }}>No {reqFilter !== 'all' ? reqFilter : ''} requests yet.</p>
                 </div>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -178,7 +179,7 @@ export default function EditorDashboard() {
                   <button className={editMode ? 'btn-primary' : 'btn-ghost'}
                     style={{ padding: '8px 16px', fontSize: 13 }}
                     onClick={editMode ? saveProfile : () => setEditMode(true)}>
-                    {saving ? 'Saving...' : editMode ? '💾 Save Changes' : '✏️ Edit Profile'}
+                    {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Profile'}
                   </button>
                 </div>
               </div>
@@ -288,12 +289,12 @@ export default function EditorDashboard() {
               ) : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-                    <InfoRow icon="💰" label="Rate" value={`$${profile?.price}/${profile?.pricingType === 'hourly' ? 'hr' : 'project'}`} />
-                    <InfoRow icon="📍" label="Location" value={profile?.location || 'Not set'} />
-                    <InfoRow icon="⏱" label="Experience" value={`${profile?.experience} years`} />
-                    <InfoRow icon="⚡" label="Response Time" value={profile?.responseTime} />
-                    <InfoRow icon="⭐" label="Rating" value={`${profile?.averageRating?.toFixed(1)} (${profile?.totalReviews} reviews)`} />
-                    <InfoRow icon="✅" label="Completed" value={`${profile?.completedProjects} projects`} />
+                    <InfoRow icon="wallet"label="Rate"value={`$${profile?.price}/${profile?.pricingType === 'hourly' ? 'hr' : 'project'}`} />
+                    <InfoRow icon="map-pin"label="Location"value={profile?.location || 'Not set'} />
+                    <InfoRow icon="clock"label="Experience"value={`${profile?.experience} years`} />
+                    <InfoRow icon="zap"label="Response Time"value={profile?.responseTime} />
+                    <InfoRow icon="star"label="Rating"value={`${profile?.averageRating?.toFixed(1)} (${profile?.totalReviews} reviews)`} />
+                    <InfoRow icon="check-circle"label="Completed"value={`${profile?.completedProjects} projects`} />
                   </div>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontSize: 13, color: '#9B9AB8', marginBottom: 6 }}>Bio</div>
@@ -337,7 +338,7 @@ export default function EditorDashboard() {
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Transaction History</h3>
               {!wallet || wallet?.transactions?.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>💳</div>
+                  <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="card"size={34} /></div>
                   <p style={{ color: '#9B9AB8' }}>No transactions yet.</p>
                   <p style={{ color: '#5C5B7A', fontSize: 13, marginTop: 4 }}>Complete projects to earn!</p>
                 </div>
@@ -352,7 +353,7 @@ export default function EditorDashboard() {
                       alignItems: 'center', justifyContent: 'center',
                       background: ['deposit','escrow_release'].includes(tx.type) ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'
                     }}>
-                      {['deposit','escrow_release'].includes(tx.type) ? '⬇️' : '⬆️'}
+                      <Icon name={['deposit','escrow_release'].includes(tx.type) ? 'arrow-down' : 'arrow-up'} size={16} style={{ color: ['deposit','escrow_release'].includes(tx.type) ? '#10B981' : '#EF4444' }} />
                     </div>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 500, textTransform: 'capitalize' }}>
@@ -411,7 +412,7 @@ function PField({ label, children }) {
 function InfoRow({ icon, label, value }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <span style={{ fontSize: 18 }}>{icon}</span>
+      <span style={{ color: '#9F67FF', display: 'inline-flex' }}><Icon name={icon} size={18} /></span>
       <div>
         <div style={{ fontSize: 12, color: '#9B9AB8' }}>{label}</div>
         <div style={{ fontSize: 14, fontWeight: 500 }}>{value || 'Not set'}</div>

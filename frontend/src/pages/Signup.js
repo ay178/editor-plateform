@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import GoogleButton from '../components/GoogleButton';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 
 function PasswordStrength({ password }) {
   const checks = [
@@ -213,7 +214,7 @@ export default function Signup() {
                         fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: 14,
                         textTransform: 'capitalize', transition: 'all 0.2s'
                       }}>
-                      {r === 'client' ? '🎬 Client' : '✂️ Editor'}
+                      {r === 'client' ? 'Client' : 'Editor'}
                     </button>
                   ))}
                 </div>
@@ -252,7 +253,7 @@ export default function Signup() {
                       style={{
                         position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
                         background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9B9AB8'
-                      }}>{showPassword ? '🙈' : '👁'}</button>
+                      }}><Icon name={showPassword ? 'eye-off' : 'eye'} size={16} /></button>
                   </div>
                   <PasswordStrength password={form.password} />
                 </div>

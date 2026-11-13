@@ -120,16 +120,16 @@ router.post('/score-video', auth, async (req, res) => {
     // Technical score (25 points)
     if (resolution === '4K') {
       scores.technical += 25;
-      feedback.push('✅ 4K resolution — excellent quality');
+      feedback.push(' 4K resolution — excellent quality');
     } else if (resolution === '1080p') {
       scores.technical += 18;
-      feedback.push('✅ 1080p resolution — good quality');
+      feedback.push(' 1080p resolution — good quality');
     } else if (resolution === '720p') {
       scores.technical += 10;
-      feedback.push('⚠️ 720p resolution — consider upgrading');
+      feedback.push(' 720p resolution — consider upgrading');
     } else {
       scores.technical += 5;
-      feedback.push('❌ Low resolution detected');
+      feedback.push('Low resolution detected');
     }
 
     // File size vs duration ratio
@@ -137,41 +137,41 @@ router.post('/score-video', auth, async (req, res) => {
       const mbPerMinute = (fileSize / (1024 * 1024)) / (duration / 60);
       if (mbPerMinute > 50) {
         scores.technical += 10;
-        feedback.push('✅ High bitrate — great visual quality');
+        feedback.push('High bitrate — great visual quality');
       } else if (mbPerMinute > 20) {
         scores.technical += 6;
-        feedback.push('✅ Good bitrate');
+        feedback.push('Good bitrate');
       } else {
         scores.technical += 2;
-        feedback.push('⚠️ Low bitrate may affect quality');
+        feedback.push('Low bitrate may affect quality');
       }
     }
 
     // Color grading (25 points)
     if (hasColorGrading) {
       scores.creativity += 25;
-      feedback.push('✅ Color grading detected — professional look');
+      feedback.push('Color grading detected — professional look');
     } else {
       scores.creativity += 10;
-      feedback.push('⚠️ No color grading — add for professional finish');
+      feedback.push('No color grading — add for professional finish');
     }
 
     // Sound design (25 points)
     if (hasSoundDesign) {
       scores.storytelling += 25;
-      feedback.push('✅ Sound design present — enhances viewer experience');
+      feedback.push('Sound design present — enhances viewer experience');
     } else {
       scores.storytelling += 8;
-      feedback.push('⚠️ Sound design missing — critical for engagement');
+      feedback.push('Sound design missing — critical for engagement');
     }
 
     // Motion graphics (25 points)
     if (hasMotionGraphics) {
       scores.production += 25;
-      feedback.push('✅ Motion graphics — adds production value');
+      feedback.push('Motion graphics — adds production value');
     } else {
       scores.production += 12;
-      feedback.push('💡 Motion graphics could improve engagement');
+      feedback.push('Motion graphics could improve engagement');
     }
 
     const totalScore = Math.round(

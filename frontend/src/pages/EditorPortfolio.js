@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 
 export default function EditorPortfolio() {
   const { user } = useAuth();
@@ -79,7 +80,7 @@ export default function EditorPortfolio() {
         {/* Portfolio grid */}
         {portfolio.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>🎬</div>
+            <div style={{ color: '#9F67FF', marginBottom: 16 }}><Icon name="film"size={47} /></div>
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No portfolio items yet</h3>
             <p style={{ color: '#9B9AB8', marginBottom: 24 }}>Add your best work to attract more clients</p>
             <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Add Your First Work</button>
@@ -103,7 +104,7 @@ export default function EditorPortfolio() {
                       background: 'rgba(239,68,68,0.8)', border: 'none', color: '#fff',
                       padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
                       fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 600
-                    }}>🗑 Remove</button>
+                    }}>Remove</button>
                   </div>
                   <div style={{
                     position: 'absolute', top: 8, right: 8,
@@ -157,7 +158,7 @@ export default function EditorPortfolio() {
                       background: form.type === t ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.04)',
                       border: form.type === t ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
                       color: form.type === t ? '#9F67FF' : '#9B9AB8', textTransform: 'capitalize'
-                    }}>{t === 'image' ? '🖼 Image' : t === 'video' ? '🎬 Video' : '🔗 Link'}</button>
+                    }}>{t === 'image' ? 'Image' : t === 'video' ? 'Video' : 'Link'}</button>
                 ))}
               </div>
             </div>

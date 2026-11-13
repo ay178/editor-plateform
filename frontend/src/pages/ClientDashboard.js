@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import ProjectFiles from '../components/ProjectFiles';
+import Icon from'../components/Icon';
 
 function Stars({ n }) {
   return <span className="stars">{'★'.repeat(Math.round(n))}{'☆'.repeat(5 - Math.round(n))}</span>;
@@ -45,7 +46,7 @@ export default function ClientDashboard() {
       <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
         <div style={{ marginBottom: 32 }}>
           <p style={{ color: '#9B9AB8', fontSize: 14 }}>Welcome back,</p>
-          <h1 style={{ fontSize: 30, fontWeight: 700 }}>{user?.name} 👋</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 700 }}>{user?.name}</h1>
         </div>
 
         <div className="grid-4" style={{ marginBottom: 36 }}>
@@ -77,7 +78,7 @@ export default function ClientDashboard() {
         {loading ? <p style={{ color: '#9B9AB8' }}>Loading...</p>
           : filtered.length === 0
           ? <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+              <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="inbox"size={34} /></div>
               <p style={{ color: '#9B9AB8' }}>No {tab !== 'all' ? tab : ''} requests yet.</p>
               <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/browse')}>Browse Editors</button>
             </div>
@@ -133,10 +134,10 @@ export function RequestCard({ req, role, onCancel, onComplete, onReview, onMessa
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
           {onMessage && (
-            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onMessage}>💬 Chat</button>
+            <button className="btn-ghost"style={{ padding: '7px 14px', fontSize: 13 }} onClick={onMessage}>Chat</button>
           )}
           {trackable && (
-            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => navigate(`/project/${req._id}`)}>📍 Track{req.tracking?.progress ? ` · ${req.tracking.progress}%` : ''}</button>
+            <button className="btn-ghost"style={{ padding: '7px 14px', fontSize: 13 }} onClick={() =>navigate(`/project/${req._id}`)}>Track{req.tracking?.progress ? ` · ${req.tracking.progress}%` : ''}</button>
           )}
           {role === 'editor' && req.status === 'pending' && (
             <>
@@ -151,7 +152,7 @@ export function RequestCard({ req, role, onCancel, onComplete, onReview, onMessa
             <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#EF4444' }} onClick={onCancel}>Cancel</button>
           )}
           {role === 'client' && req.status === 'completed' && onReview && (
-            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13, color: '#F59E0B' }} onClick={onReview}>⭐ Review</button>
+            <button className="btn-ghost"style={{ padding: '7px 14px', fontSize: 13, color: '#F59E0B' }} onClick={onReview}>Review</button>
           )}
         </div>
       </div>

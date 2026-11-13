@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import API from '../utils/api';
+import Icon from'../components/Icon';
 
 const StarRating = ({ rating, size = 14 }) => (
   <span style={{ display: 'inline-flex', gap: 1 }}>
@@ -94,7 +95,7 @@ const EditorProfile = () => {
 
   if (!profile) return (
     <div style={{ textAlign: 'center', padding: '80px 0', color: '#94A3B8' }}>
-      <div style={{ fontSize: 48 }}>😕</div>
+      <div style={{ color: '#9F67FF' }}><Icon name="alert"size={40} /></div>
       <div style={{ fontSize: 17, fontWeight: 600, marginTop: 12 }}>
         Editor not found
       </div>
@@ -307,7 +308,7 @@ const EditorProfile = () => {
                 <button
                   className="msg-btn"
                   onClick={() => navigate(`/messages/${id}`)}>
-                  💬 Message
+                   Message
                 </button>
                 <button
                   className="hire-btn"
@@ -521,7 +522,7 @@ const EditorProfile = () => {
 
                 {hireSent ? (
                   <div style={{ textAlign: 'center', padding: '30px 0' }}>
-                    <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
+                    <div style={{ color: '#10B981', marginBottom: 12 }}><Icon name="check-circle"size={47} /></div>
                     <div style={{
                       fontSize: 18, fontWeight: 700, color: '#0F172A'
                     }}>
@@ -636,7 +637,7 @@ const EditorProfile = () => {
                       fontFamily: 'inherit',
                       boxShadow: '0 4px 14px rgba(99,102,241,0.4)'
                     }}>
-                      Send Hire Request 🚀
+                      Send Hire Request 
                     </button>
                   </>
                 )}

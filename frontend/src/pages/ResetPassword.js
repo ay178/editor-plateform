@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
+import Icon from'../components/Icon';
 
 function PasswordStrength({ password }) {
   const checks = [
@@ -69,7 +70,7 @@ export default function ResetPassword() {
       await api.post('/reset-password', { token, password });
       setDone(true);
       setTimeout(() => navigate('/login', {
-        state: { message: '✅ Password reset! Please sign in with your new password.' }
+        state: { message: 'Password reset! Please sign in with your new password.' }
       }), 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong. Try again.');
@@ -82,7 +83,7 @@ export default function ResetPassword() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="glass" style={{ padding: 40, maxWidth: 420, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
+          <div style={{ color: '#EF4444', marginBottom: 16 }}><Icon name="x-circle"size={40} /></div>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Invalid Link</h2>
           <p style={{ color: '#9B9AB8', marginBottom: 24 }}>This password reset link is missing or malformed.</p>
           <Link to="/forgot-password">
@@ -121,7 +122,7 @@ export default function ResetPassword() {
 
           {done ? (
             <div style={{ textAlign: 'center', padding: '10px 0' }}>
-              <div style={{ fontSize: 44, marginBottom: 14 }}>✅</div>
+              <div style={{ color: '#10B981', marginBottom: 14 }}><Icon name="check-circle"size={37} /></div>
               <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Password reset!</h3>
               <p style={{ color: '#9B9AB8', fontSize: 14 }}>Redirecting you to login...</p>
             </div>
@@ -138,7 +139,7 @@ export default function ResetPassword() {
                     style={{
                       position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9B9AB8'
-                    }}>{showPassword ? '🙈' : '👁'}</button>
+                    }}><Icon name={showPassword ? 'eye-off' : 'eye'} size={16} /></button>
                 </div>
                 <PasswordStrength password={password} />
               </div>

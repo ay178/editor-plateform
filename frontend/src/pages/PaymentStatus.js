@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { verifyOrder } from '../utils/cashfree';
+import Icon from'../components/Icon';
 
 // Cashfree sends the customer here (return_url) when it can't use the popup,
 // e.g. inside an in-app browser. We ask the backend for the real order status.
@@ -38,23 +39,23 @@ export default function PaymentStatus() {
 
   const dashboard = user?.role === 'editor' ? '/dashboard/editor' : '/dashboard/client';
 
-  let icon = '⏳', title = 'Checking your payment…', body = 'This only takes a moment.';
+  let icon = 'clock', title = 'Checking your payment…', body = 'This only takes a moment.';
   if (error) {
-    icon = '⚠️'; title = 'Something went wrong'; body = error;
+    icon = 'alert'; title = 'Something went wrong'; body = error;
   } else if (result) {
     if (result.state === 'paid') {
-      icon = '✅'; title = 'Payment successful'; body = result.message || 'Thank you!';
+      icon = 'check-circle'; title = 'Payment successful'; body = result.message || 'Thank you!';
     } else if (result.state === 'pending') {
-      icon = '⏳'; title = 'Payment not completed'; body = 'We have not received a confirmation yet. If money was deducted it will be reflected shortly.';
+      icon = 'clock'; title = 'Payment not completed'; body = 'We have not received a confirmation yet. If money was deducted it will be reflected shortly.';
     } else {
-      icon = '❌'; title = 'Payment failed'; body = result.message || 'The payment did not go through. You have not been charged for this order.';
+      icon = 'x-circle'; title = 'Payment failed'; body = result.message || 'The payment did not go through. You have not been charged for this order.';
     }
   }
 
   return (
     <div className="page" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', maxWidth: 420, padding: 24 }}>
-        <div style={{ fontSize: 56, marginBottom: 12 }}>{icon}</div>
+        <div style={{ marginBottom: 12, color: icon === 'check-circle' ? '#10B981' : icon === 'x-circle' ? '#EF4444' : icon === 'alert' ? '#F59E0B' : '#9F67FF' }}><Icon name={icon} size={52} /></div>
         <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>{title}</h2>
         <p style={{ color: '#9B9AB8', marginBottom: 24 }}>{body}</p>
         {orderId && <p style={{ color: '#6B6A85', fontSize: 12, marginBottom: 24 }}>Order: {orderId}</p>}

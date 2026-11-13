@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from'./Icon';
 
 export default function ProjectFiles({ requestId, requestStatus }) {
   const { user } = useAuth();
@@ -73,7 +74,7 @@ export default function ProjectFiles({ requestId, requestStatus }) {
         border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10,
         fontSize: 13, color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 8
       }}>
-        🔒 File sharing available only after request is accepted
+         File sharing available only after request is accepted
       </div>
     );
   }
@@ -85,7 +86,7 @@ export default function ProjectFiles({ requestId, requestStatus }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h4 style={{ fontSize: 14, fontWeight: 600 }}>📁 Project Files</h4>
+        <h4 style={{ fontSize: 14, fontWeight: 600 }}>Project Files</h4>
         {canShare && requestStatus !== 'completed' && (
           <div>
             <input
@@ -127,7 +128,7 @@ export default function ProjectFiles({ requestId, requestStatus }) {
         <div>
           {/* Client Files */}
           <FileSection
-            title="📹 Client Files (Raw footage)"
+            title="Client Files (Raw footage)"
             files={clientFiles}
             currentUserId={user._id}
             onDelete={handleDelete}
@@ -137,7 +138,7 @@ export default function ProjectFiles({ requestId, requestStatus }) {
 
           {/* Editor Files */}
           <FileSection
-            title="✂️ Editor Files (Edited output)"
+            title="Editor Files (Edited output)"
             files={editorFiles}
             currentUserId={user._id}
             onDelete={handleDelete}
@@ -173,7 +174,7 @@ function FileSection({ title, files, currentUserId, onDelete, formatSize, emptyM
             }}>
               {/* Icon */}
               <div style={{ fontSize: 24, flexShrink: 0 }}>
-                {file.type === 'video' ? '🎬' : '🖼️'}
+                <Icon name={file.type === 'video' ? 'film' : 'image'} size={22} />
               </div>
 
               {/* Preview */}
@@ -203,14 +204,14 @@ function FileSection({ title, files, currentUserId, onDelete, formatSize, emptyM
                     background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)',
                     color: '#06B6D4', padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
                     fontSize: 12, fontFamily: 'DM Sans, sans-serif'
-                  }}>⬇ Download</button>
+                  }}>Download</button>
                 </a>
                 {file.uploadedBy?._id === currentUserId && (
                   <button onClick={() => onDelete(file._id)} style={{
                     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
                     color: '#EF4444', padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
                     fontSize: 12, fontFamily: 'DM Sans, sans-serif'
-                  }}>🗑</button>
+                  }}><Icon name="trash"size={15} /></button>
                 )}
               </div>
             </div>
