@@ -1,18 +1,15 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
+const BankAccount = require('../models/BankAccount');
+const WithdrawalRequest = require('../models/WithdrawalRequest');
 const Payment = require('../models/Payment');
 const Wallet = require('../models/Wallet');
 const HiringRequest = require('../models/HiringRequest');
-const Notification = require('../models/Notification');
+const CashfreeOrder = require('../models/CashfreeOrder');
 const { auth, requireRole } = require('../middleware/auth');
-
-// Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+const { startCheckout } = require('../services/checkout');
+const { settleOrder, computeBreakdown } = require('../services/fulfillment');
 
 // Helper — Get or create wallet
 const getWallet = async (userId) => {
@@ -33,185 +30,93 @@ router.get('/wallet', auth, async (req, res) => {
   }
 });
 
-// POST /api/payment/create-order - Create Razorpay order
+// POST /api/payment/create-order — start a Cashfree checkout for a hire request.
+//
+// Body: { hiringRequestId, paymentType: 'advance' | 'final', phone? }
+// The amount is worked out here from the hiring request; the browser can't set it.
+// Response: { orderId, paymentSessionId, mode }  (or { orderId, alreadyPaid: true })
 router.post('/create-order', auth, async (req, res) => {
   try {
-    const { amount, currency = 'INR', hiringRequestId } = req.body;
+    const { hiringRequestId, paymentType, phone } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: 'Invalid amount' });
+    if (!['advance', 'final'].includes(paymentType)) {
+      return res.status(400).json({ message: 'paymentType must be "advance" or "final"' });
     }
 
-    // Amount in paise (1 INR = 100 paise)
-    const amountInPaise = Math.round(amount * 100);
+    const request = await HiringRequest.findById(hiringRequestId);
+    if (!request) return res.status(404).json({ message: 'Request not found' });
 
-    const order = await razorpay.orders.create({
-      amount: amountInPaise,
-      currency,
-      receipt: `receipt_${Date.now()}`,
-      notes: {
-        hiringRequestId: hiringRequestId || '',
-        userId: req.user._id.toString()
+    if (request.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the client on this request can pay for it' });
+    }
+    if (!request.budget || request.budget <= 0) {
+      return res.status(400).json({ message: 'This request has no budget set' });
+    }
+
+    const b = computeBreakdown(request.budget);
+    let amount, kind, orderPrefix, note;
+
+    if (paymentType === 'advance') {
+      if (request.paymentStatus !== 'unpaid') {
+        return res.status(400).json({ message: 'Advance has already been paid for this request' });
       }
+      if (!['pending', 'accepted'].includes(request.status)) {
+        return res.status(400).json({ message: `Cannot pay for a ${request.status} request` });
+      }
+      amount = b.advanceAmount;
+      kind = 'hire_advance';
+      orderPrefix = 'adv';
+      note = `50% advance - ${request.projectTitle}`;
+    } else {
+      if (request.paymentStatus !== 'advance_paid' || request.status !== 'accepted') {
+        return res.status(400).json({ message: 'Final payment is only due after the advance is paid and the request is accepted' });
+      }
+      amount = b.remainingAmount;
+      kind = 'hire_final';
+      orderPrefix = 'fin';
+      note = `Final payment - ${request.projectTitle}`;
+    }
+
+    const checkout = await startCheckout({
+      userId: req.user._id,
+      phone,
+      kind,
+      amount,
+      hiringRequestId: request._id,
+      orderPrefix,
+      orderKey: request._id.toString(),
+      note
     });
 
-    res.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      key: process.env.RAZORPAY_KEY_ID
-    });
+    res.json(checkout);
   } catch (err) {
+    if (err.status && err.status < 500) {
+      return res.status(err.status).json({ message: err.message, needsPhone: !!err.needsPhone });
+    }
+    console.error('create-order error:', err.details || err.message);
     res.status(500).json({ message: err.message });
   }
 });
 
-// POST /api/payment/verify - Verify Razorpay payment
+// POST /api/payment/verify — confirm a payment after checkout (works for hire
+// payments and subscriptions). Body: { orderId }
+//
+// Cashfree is asked for the real order status; nothing the browser sends is trusted.
+// Response: { state: 'paid' | 'pending' | 'failed' | 'error', ... }
 router.post('/verify', auth, async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      hiringRequestId,
-      amount,
-      paymentType
-    } = req.body;
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ message: 'orderId is required' });
 
-    // Verify signature
-    const body = razorpay_order_id + '|' + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
-      .digest('hex');
-
-    if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({ message: 'Payment verification failed' });
+    const order = await CashfreeOrder.findOne({ orderId });
+    if (!order || order.user.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Payment verified — now process
-    const request = await HiringRequest.findById(hiringRequestId)
-      .populate('client editor', 'name email');
-
-    if (!request) {
-      return res.status(404).json({ message: 'Request not found' });
-    }
-
-    const totalAmount = request.budget;
-    const advanceAmount = Math.round(totalAmount * 0.5);
-    const platformFee = Math.round(advanceAmount * 0.25);
-    const editorAdvance = advanceAmount - platformFee;
-    const remainingAmount = totalAmount - advanceAmount;
-
-    if (paymentType === 'advance') {
-      // Create payment record
-      const payment = await Payment.create({
-        client: req.user._id,
-        editor: request.editor._id,
-        hiringRequest: hiringRequestId,
-        totalAmount,
-        advanceAmount,
-        platformFee,
-        editorAdvance,
-        remainingAmount,
-        status: 'advance_paid',
-        advancePaidAt: new Date(),
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id
-      });
-
-      // Add to editor escrow wallet
-      const editorWallet = await getWallet(request.editor._id);
-      editorWallet.escrowBalance += editorAdvance;
-      editorWallet.transactions.push({
-        type: 'escrow_hold',
-        amount: editorAdvance,
-        description: `Advance received for "${request.projectTitle}" (in escrow)`,
-        hiringRequest: hiringRequestId,
-        status: 'completed'
-      });
-      await editorWallet.save();
-
-      // Update hiring request
-      request.payment = payment._id;
-      request.paymentStatus = 'advance_paid';
-      request.status = 'accepted';
-      await request.save();
-
-      // Notify editor
-      await Notification.create({
-        recipient: request.editor._id,
-        sender: req.user._id,
-        hiringRequest: hiringRequestId,
-        type: 'hire_request',
-        message: `${request.client.name} paid ₹${advanceAmount} advance for "${request.projectTitle}". ₹${editorAdvance} is held in escrow for you.`
-      });
-
-      res.json({
-        success: true,
-        message: 'Advance payment successful!',
-        payment,
-        breakdown: {
-          totalBudget: totalAmount,
-          advancePaid: advanceAmount,
-          platformFee,
-          editorEscrow: editorAdvance,
-          remainingDue: remainingAmount
-        }
-      });
-
-    } else if (paymentType === 'final') {
-      // Final payment
-      const payment = await Payment.findById(request.payment);
-      if (!payment) {
-        return res.status(404).json({ message: 'Payment record not found' });
-      }
-
-      const remainingPlatformFee = Math.round(remainingAmount * 0.25);
-      const remainingEditorAmount = remainingAmount - remainingPlatformFee;
-      const totalEditorAmount = payment.editorAdvance + remainingEditorAmount;
-
-      // Release escrow + add to editor wallet
-      const editorWallet = await getWallet(request.editor._id);
-      editorWallet.escrowBalance -= payment.editorAdvance;
-      editorWallet.balance += totalEditorAmount;
-      editorWallet.totalEarned += totalEditorAmount;
-      editorWallet.transactions.push({
-        type: 'escrow_release',
-        amount: totalEditorAmount,
-        description: `Full payment released for "${request.projectTitle}"`,
-        hiringRequest: hiringRequestId,
-        status: 'completed'
-      });
-      await editorWallet.save();
-
-      // Update payment
-      payment.status = 'completed';
-      payment.completedAt = new Date();
-      await payment.save();
-
-      // Update request
-      request.paymentStatus = 'completed';
-      request.status = 'completed';
-      await request.save();
-
-      // Notify editor
-      await Notification.create({
-        recipient: request.editor._id,
-        sender: req.user._id,
-        hiringRequest: hiringRequestId,
-        type: 'request_completed',
-        message: `Project "${request.projectTitle}" completed! ₹${totalEditorAmount} has been released to your wallet.`
-      });
-
-      res.json({
-        success: true,
-        message: 'Final payment successful! Project completed.',
-        editorReceived: totalEditorAmount
-      });
-    }
-
+    const result = await settleOrder(orderId);
+    res.json(result);
   } catch (err) {
+    console.error('verify error:', err.details || err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -235,29 +140,65 @@ router.get('/history', auth, async (req, res) => {
 });
 
 // POST /api/payment/withdraw - Editor withdraws
+// Body: { amount }. Requires a saved bank account (PUT /api/bank).
+// The amount is taken off the wallet immediately and a "pending" withdrawal is recorded
+// with the bank details snapshot; it turns "completed" once the payout is made.
 router.post('/withdraw', auth, requireRole('editor'), async (req, res) => {
   try {
-    const { amount } = req.body;
-    const wallet = await getWallet(req.user._id);
+    const amount = Math.round(Number(req.body.amount) * 100) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Enter a valid amount' });
+    }
 
-    if (wallet.balance < amount) {
+    const bank = await BankAccount.findOne({ user: req.user._id });
+    if (!bank) {
       return res.status(400).json({
-        message: `Insufficient balance. Available: ₹${wallet.balance}`
+        message: 'Add your bank account before withdrawing',
+        needsBankAccount: true
       });
     }
 
-    wallet.balance -= amount;
-    wallet.transactions.push({
+    const tx = {
+      _id: new mongoose.Types.ObjectId(),
       type: 'withdrawal',
       amount,
-      description: `Withdrawal of ₹${amount}`,
-      status: 'completed'
+      description: `Withdrawal to ${bank.bankName} a/c XXXX${bank.accountLast4}`,
+      status: 'pending'
+    };
+
+    // Record where the money must go first, then debit. If the debit is refused
+    // (not enough balance) the record is removed again.
+    const request = await WithdrawalRequest.create({
+      user: req.user._id,
+      amount,
+      transactionId: tx._id,
+      bank: {
+        accountHolderName: bank.accountHolderName,
+        bankName: bank.bankName,
+        accountNumberEncrypted: bank.accountNumberEncrypted,
+        accountLast4: bank.accountLast4,
+        ifsc: bank.ifsc
+      }
     });
-    await wallet.save();
+
+    // Atomic: debits only if the balance still covers it (no double-withdraw race)
+    const wallet = await Wallet.findOneAndUpdate(
+      { user: req.user._id, balance: { $gte: amount } },
+      { $inc: { balance: -amount }, $push: { transactions: tx } },
+      { new: true }
+    );
+
+    if (!wallet) {
+      await WithdrawalRequest.deleteOne({ _id: request._id });
+      const current = await getWallet(req.user._id);
+      return res.status(400).json({
+        message: `Insufficient balance. Available: ₹${current.balance}`
+      });
+    }
 
     res.json({
       wallet,
-      message: `₹${amount} withdrawal successful`
+      message: `₹${amount} withdrawal requested to ${bank.bankName} a/c XXXX${bank.accountLast4}`
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

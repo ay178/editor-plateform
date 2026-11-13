@@ -30,6 +30,9 @@ const paymentSchema = new mongoose.Schema({
     ],
     default: 'pending'
   },
+  // unique + sparse: the same Cashfree order can never create two Payment records
+  cashfreeOrderId: { type: String, unique: true, sparse: true },
+  // legacy: payments taken through Razorpay before the Cashfree migration
   razorpayOrderId: { type: String },
   razorpayPaymentId: { type: String },
   advancePaidAt: { type: Date },

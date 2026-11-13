@@ -331,6 +331,52 @@ participants (ref[]), messages[{ sender, receiver, content, read }], lastMessage
 
 ---
 
+## Payments (Cashfree)
+
+Payments run on [Cashfree Payment Gateway](https://www.cashfree.com/docs). Add these to `backend/.env`:
+
+```env
+CASHFREE_APP_ID=your_app_id
+CASHFREE_SECRET_KEY=your_secret_key
+CASHFREE_ENV=sandbox          # "production" when live
+CLIENT_URL=http://localhost:3000   # used for the payment return_url
+# optional
+CASHFREE_API_VERSION=2025-01-01
+CASHFREE_NOTIFY_URL=          # per-order webhook URL (otherwise the dashboard one is used)
+```
+
+**Webhook:** in the Cashfree dashboard (Developers → Webhooks) add
+`https://<your-backend>/api/payment/webhook`. It is the safety net for customers who pay and
+close the tab before the browser confirms. Requests are authenticated with Cashfree's HMAC
+signature, and the order status is re-fetched from Cashfree before anything is fulfilled.
+
+**Flow:** the server prices the order and creates it (`POST /api/payment/create-order`,
+`POST /api/subscription/create-order`) → the browser opens Cashfree checkout with the returned
+`paymentSessionId` → the browser calls `POST /api/payment/verify` with the `orderId` → the server
+asks Cashfree for the real status, checks the amount, and fulfils the order exactly once
+(the webhook and `/verify` share the same idempotent settlement). Orders are tracked in the
+`CashfreeOrder` collection. Amounts are in rupees.
+
+Cashfree requires a mobile number on every order; users are asked for it once at first checkout.
+
+## Editor bank account & withdrawals
+
+Editors add their bank account on the **Wallet** page (`GET/PUT/DELETE /api/bank`) and can only
+withdraw once one is saved. The account number is stored **encrypted** (AES-256-GCM); the browser
+only ever sees the last 4 digits. Add a long random `BANK_ENCRYPTION_KEY` to `backend/.env`
+(it falls back to `JWT_SECRET`). Don't change the key later, or saved numbers can't be decrypted.
+
+A withdrawal (`POST /api/payment/withdraw`) debits the wallet at once and creates a **pending**
+`WithdrawalRequest` with a snapshot of the bank details. Payouts are manual for now. From `backend/`:
+
+```bash
+node scripts/withdrawals.js list                # pending requests with full bank details
+node scripts/withdrawals.js paid <id> <utr>     # after you send the money
+node scripts/withdrawals.js failed <id>         # refunds the amount to the editor's wallet
+```
+
+---
+
 ## Production Deployment
 
 ### Backend (Railway / Render / Heroku)

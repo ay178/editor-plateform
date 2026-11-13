@@ -66,6 +66,10 @@ const authLimiter = rateLimit({
   message: { message: 'Too many attempts, please try again after 15 minutes.' }
 });
 
+// Cashfree webhook: mounted BEFORE the rate limiter (Cashfree retries from a few
+// IPs) and before the global express.json() — signature checking needs the raw body.
+app.use('/api/payment/webhook', require('./routes/cashfreeWebhook'));
+
 app.use('/api', limiter);
 app.use('/api/login', authLimiter);
 app.use('/api/signup', authLimiter);
@@ -85,6 +89,7 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/payment', require('./routes/payment'));
+app.use('/api/bank', require('./routes/bank'));
 app.use('/api/project-files', require('./routes/projectfiles'));
 
 // ── Health Check ──

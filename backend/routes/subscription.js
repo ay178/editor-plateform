@@ -1,24 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
 const { auth } = require('../middleware/auth');
 const User = require('../models/User');
+const CashfreeOrder = require('../models/CashfreeOrder');
+const { startCheckout } = require('../services/checkout');
+const { settleOrder } = require('../services/fulfillment');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
+// Prices are in RUPEES (Cashfree takes rupees, not paise).
+// NOTE: these match what the Razorpay version actually charged (2900 * 100 paise = ₹2,900),
+// but the pricing page displays $29 / $19 — confirm which is intended.
 const PLANS = {
-  pro_client: { amount: 2900, currency: 'INR', name: 'Pro Client Plan' },
-  pro_editor: { amount: 1900, currency: 'INR', name: 'Pro Editor Plan' },
+  pro_client: { amount: 2900, name: 'Pro Client Plan' },
+  pro_editor: { amount: 1900, name: 'Pro Editor Plan' },
 };
 
-// POST /api/subscription/create-order
+// POST /api/subscription/create-order   Body: { plan, phone? }
 router.post('/create-order', auth, async (req, res) => {
   try {
-    const { plan } = req.body;
+    const { plan, phone } = req.body;
 
     if (!PLANS[plan])
       return res.status(400).json({ message: 'Invalid plan' });
@@ -30,56 +29,45 @@ router.post('/create-order', auth, async (req, res) => {
     if (plan === 'pro_editor' && req.user.role !== 'editor')
       return res.status(403).json({ message: 'This plan is for editors only' });
 
-    const order = await razorpay.orders.create({
-      amount: PLANS[plan].amount * 100, // paise mein
-      currency: PLANS[plan].currency,
-      receipt: `sub_${req.user._id}_${Date.now()}`,
-      notes: { userId: req.user._id.toString(), plan }
+    const checkout = await startCheckout({
+      userId: req.user._id,
+      phone,
+      kind: 'subscription',
+      amount: PLANS[plan].amount,
+      plan,
+      orderPrefix: 'sub',
+      orderKey: req.user._id.toString(),
+      note: PLANS[plan].name
     });
 
-    res.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
-      plan,
-      planName: PLANS[plan].name,
-      user: { name: req.user.name, email: req.user.email }
-    });
+    res.json({ ...checkout, plan, planName: PLANS[plan].name });
 
   } catch (err) {
+    if (err.status && err.status < 500) {
+      return res.status(err.status).json({ message: err.message, needsPhone: !!err.needsPhone });
+    }
+    console.error('subscription create-order error:', err.details || err.message);
     res.status(500).json({ message: err.message });
   }
 });
 
-// POST /api/subscription/verify
+// POST /api/subscription/verify   Body: { orderId }
+// Same settlement as /api/payment/verify — kept so existing clients keep working.
 router.post('/verify', auth, async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = req.body;
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ message: 'orderId is required' });
 
-    // Verify signature
-    const sign = razorpay_order_id + '|' + razorpay_payment_id;
-    const expectedSign = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(sign)
-      .digest('hex');
+    const order = await CashfreeOrder.findOne({ orderId });
+    if (!order || order.kind !== 'subscription' || order.user.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
 
-    if (expectedSign !== razorpay_signature)
-      return res.status(400).json({ message: 'Payment verification failed' });
-
-    // Update user subscription — 30 days
-    const validUntil = new Date();
-    validUntil.setDate(validUntil.getDate() + 30);
-
-    await User.findByIdAndUpdate(req.user._id, {
-      'subscription.plan': plan,
-      'subscription.validUntil': validUntil,
-      'subscription.razorpaySubscriptionId': razorpay_payment_id
-    });
-
-    res.json({ message: 'Subscription activated!', plan, validUntil });
+    const result = await settleOrder(orderId);
+    res.json(result);
 
   } catch (err) {
+    console.error('subscription verify error:', err.details || err.message);
     res.status(500).json({ message: err.message });
   }
 });
