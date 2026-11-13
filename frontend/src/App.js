@@ -19,6 +19,7 @@ import SmartPricing from './pages/SmartPricing';
 import VideoScorer from './pages/VideoScorer';
 import Wallet from './pages/Wallet';
 import PaymentStatus from './pages/PaymentStatus';
+import ProjectTracker from './pages/ProjectTracker';
 import './index.css';
 // Replace the existing ProtectedRoute loading block in frontend/src/App.js with this.
 // Find the function ProtectedRoute({ children, role }) { ... } block and swap in
@@ -96,6 +97,7 @@ function AppRoutes() {
           <ProtectedRoute><Wallet /></ProtectedRoute>
         } />
         <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+        <Route path="/project/:id" element={<ProtectedRoute><ProjectTracker /></ProtectedRoute>} />
         <Route path="/payment-status" element={<ProtectedRoute><PaymentStatus /></ProtectedRoute>} />
 
         {/* Protected - Editor */}
