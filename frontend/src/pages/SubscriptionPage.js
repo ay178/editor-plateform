@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { createOrderWithPhone, runCheckout } from '../utils/cashfree';
 
 const PLANS = [
   {
@@ -74,40 +75,20 @@ export default function SubscriptionPage() {
 
     setLoadingPlan(planId);
     try {
-      const res = await api.post('/subscription/create-order', { plan: planId });
+      const order = await createOrderWithPhone('/subscription/create-order', { plan: planId });
+      const result = await runCheckout(order);
 
-      const options = {
-        key: res.data.keyId,
-        amount: res.data.amount,
-        currency: res.data.currency,
-        name: 'EditHire',
-        description: res.data.planName,
-        order_id: res.data.orderId,
-        handler: async (response) => {
-          try {
-            await api.post('/subscription/verify', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              plan: planId
-            });
-            setCurrentPlan(planId);
-            alert('🎉 Subscription activated successfully!');
-          } catch {
-            alert('Payment verification failed. Contact support.');
-          }
-        },
-        prefill: {
-          name: res.data.user.name,
-          email: res.data.user.email,
-        },
-        theme: { color: '#7C3AED' }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (result.state === 'paid') {
+        setCurrentPlan(planId);
+        if (result.validUntil) setValidUntil(result.validUntil);
+        alert('🎉 Subscription activated successfully!');
+      } else if (result.state === 'pending') {
+        alert('Payment was not completed.');
+      } else if (result.state !== 'redirecting') {
+        alert(result.message || 'Payment failed. If money was deducted, contact support.');
+      }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error creating order');
+      alert(err.response?.data?.message || err.message || 'Error creating order');
     } finally {
       setLoadingPlan(null);
     }
