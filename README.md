@@ -359,6 +359,22 @@ asks Cashfree for the real status, checks the amount, and fulfils the order exac
 
 Cashfree requires a mobile number on every order; users are asked for it once at first checkout.
 
+## Editor bank account & withdrawals
+
+Editors add their bank account on the **Wallet** page (`GET/PUT/DELETE /api/bank`) and can only
+withdraw once one is saved. The account number is stored **encrypted** (AES-256-GCM); the browser
+only ever sees the last 4 digits. Add a long random `BANK_ENCRYPTION_KEY` to `backend/.env`
+(it falls back to `JWT_SECRET`). Don't change the key later, or saved numbers can't be decrypted.
+
+A withdrawal (`POST /api/payment/withdraw`) debits the wallet at once and creates a **pending**
+`WithdrawalRequest` with a snapshot of the bank details. Payouts are manual for now. From `backend/`:
+
+```bash
+node scripts/withdrawals.js list                # pending requests with full bank details
+node scripts/withdrawals.js paid <id> <utr>     # after you send the money
+node scripts/withdrawals.js failed <id>         # refunds the amount to the editor's wallet
+```
+
 ---
 
 ## Production Deployment

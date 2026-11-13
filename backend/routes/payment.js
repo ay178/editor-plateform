@@ -1,5 +1,8 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
+const BankAccount = require('../models/BankAccount');
+const WithdrawalRequest = require('../models/WithdrawalRequest');
 const Payment = require('../models/Payment');
 const Wallet = require('../models/Wallet');
 const HiringRequest = require('../models/HiringRequest');
@@ -137,29 +140,65 @@ router.get('/history', auth, async (req, res) => {
 });
 
 // POST /api/payment/withdraw - Editor withdraws
+// Body: { amount }. Requires a saved bank account (PUT /api/bank).
+// The amount is taken off the wallet immediately and a "pending" withdrawal is recorded
+// with the bank details snapshot; it turns "completed" once the payout is made.
 router.post('/withdraw', auth, requireRole('editor'), async (req, res) => {
   try {
-    const { amount } = req.body;
-    const wallet = await getWallet(req.user._id);
+    const amount = Math.round(Number(req.body.amount) * 100) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Enter a valid amount' });
+    }
 
-    if (wallet.balance < amount) {
+    const bank = await BankAccount.findOne({ user: req.user._id });
+    if (!bank) {
       return res.status(400).json({
-        message: `Insufficient balance. Available: ₹${wallet.balance}`
+        message: 'Add your bank account before withdrawing',
+        needsBankAccount: true
       });
     }
 
-    wallet.balance -= amount;
-    wallet.transactions.push({
+    const tx = {
+      _id: new mongoose.Types.ObjectId(),
       type: 'withdrawal',
       amount,
-      description: `Withdrawal of ₹${amount}`,
-      status: 'completed'
+      description: `Withdrawal to ${bank.bankName} a/c XXXX${bank.accountLast4}`,
+      status: 'pending'
+    };
+
+    // Record where the money must go first, then debit. If the debit is refused
+    // (not enough balance) the record is removed again.
+    const request = await WithdrawalRequest.create({
+      user: req.user._id,
+      amount,
+      transactionId: tx._id,
+      bank: {
+        accountHolderName: bank.accountHolderName,
+        bankName: bank.bankName,
+        accountNumberEncrypted: bank.accountNumberEncrypted,
+        accountLast4: bank.accountLast4,
+        ifsc: bank.ifsc
+      }
     });
-    await wallet.save();
+
+    // Atomic: debits only if the balance still covers it (no double-withdraw race)
+    const wallet = await Wallet.findOneAndUpdate(
+      { user: req.user._id, balance: { $gte: amount } },
+      { $inc: { balance: -amount }, $push: { transactions: tx } },
+      { new: true }
+    );
+
+    if (!wallet) {
+      await WithdrawalRequest.deleteOne({ _id: request._id });
+      const current = await getWallet(req.user._id);
+      return res.status(400).json({
+        message: `Insufficient balance. Available: ₹${current.balance}`
+      });
+    }
 
     res.json({
       wallet,
-      message: `₹${amount} withdrawal successful`
+      message: `₹${amount} withdrawal requested to ${bank.bankName} a/c XXXX${bank.accountLast4}`
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
