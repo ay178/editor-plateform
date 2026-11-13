@@ -99,8 +99,8 @@ export default function EditorDashboard() {
             <h1 style={{ fontSize: 26, fontWeight: 700 }}>{user?.name}</h1>
           </div>
           <div style={{ marginLeft: 'auto' }}>
-            <span className={profile?.availability ? 'chip-cyan' : 'chip'}>
-              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 8, background: profile?.availability ? '#10B981' : '#EF4444' }} />{profile?.availability ? 'Available' : 'Unavailable'}
+            <span className={profile?.availability ? 'chip-cyan' : 'chip'} style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+              <span style={{ display: 'inline-block', flexShrink: 0, width: 8, height: 8, borderRadius: '50%', marginRight: 8, background: profile?.availability ? '#10B981' : '#EF4444' }} />{profile?.availability ? 'Available' : 'Unavailable'}
             </span>
           </div>
         </div>

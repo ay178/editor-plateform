@@ -210,3 +210,49 @@ body {
   .sidebar { width: 100%; }
   .grid-3 { grid-template-columns: 1fr; }
 }
+/* ── Left sidebar navigation (desktop) / slide-in drawer (phone) ── */
+:root { --sidebar-w: 236px; }
+
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); z-index: 300;
+  display: flex; flex-direction: column; padding: 16px 12px; overflow-y: auto;
+  background: rgba(15,15,26,0.97); border-right: 1px solid rgba(255,255,255,0.06);
+}
+.topbar, .sidebar-overlay { display: none; }
+
+.side-link {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; text-decoration: none; color: #9B9AB8;
+  border-left: 3px solid transparent; transition: background .15s, color .15s;
+}
+.side-link:hover { background: rgba(255,255,255,0.05); color: #F1F0FF; }
+.side-link.active { background: rgba(124,58,237,0.14); color: #9F67FF; border-left-color: #7C3AED; }
+
+.topbar-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  background: none; border: none; border-radius: 10px; color: #F1F0FF; cursor: pointer;
+}
+.topbar-btn:hover { background: rgba(255,255,255,0.06); }
+
+@media (min-width: 900px) {
+  body.with-sidebar { padding-left: var(--sidebar-w); }
+  .sidebar-close { display: none; }
+  .page { padding-top: 28px; }
+}
+
+@media (max-width: 899px) {
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 200;
+    display: flex; align-items: center; gap: 10px; padding: 0 12px;
+    background: rgba(15,15,26,0.95); backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar {
+    width: min(290px, 84vw); z-index: 400; transform: translateX(-100%);
+    transition: transform .25s ease; box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  }
+  .sidebar.open { transform: none; }
+  .sidebar-overlay { display: block; position: fixed; inset: 0; z-index: 350; background: rgba(0,0,0,0.55); }
+  .sidebar-close { display: inline-flex; }
+  .page { padding-top: 72px; }
+}
