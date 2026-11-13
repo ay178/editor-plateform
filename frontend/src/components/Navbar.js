@@ -1,161 +1,122 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Icon from './Icon';
 
+// Left sidebar on desktop; on phones it becomes a slim top bar with a hamburger
+// that slides the same menu in from the left. Layout rules live in index.css
+// (.sidebar, .topbar, .sidebar-overlay and body.with-sidebar).
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const handleLogout = () => { logout(); navigate('/'); };
+  const handleLogout = () => { setOpen(false); logout(); navigate('/'); };
   const isActive = (path) => location.pathname === path;
 
-  const navStyle = {
-    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-    background: 'rgba(15,15,26,0.92)',
-    backdropFilter: 'blur(20px)',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    height: '64px',
-    display: 'flex', alignItems: 'center',
-  };
+  // Reserve room for the sidebar on desktop.
+  useEffect(() => {
+    document.body.classList.add('with-sidebar');
+    return () => document.body.classList.remove('with-sidebar');
+  }, []);
+
+  // Close the drawer after navigating.
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  // Escape closes the drawer; stop the page scrolling behind it.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [open]);
+
+  const links = [{ to: '/browse', label: 'Browse Editors', icon: 'search' }];
+  if (user?.role === 'client') links.push(
+    { to: '/dashboard/client', label: 'Dashboard', icon: 'clipboard' },
+    { to: '/ai-match', label: 'AI Match', icon: 'bot' },
+    { to: '/wallet', label: 'Wallet', icon: 'wallet' }
+  );
+  if (user?.role === 'editor') links.push(
+    { to: '/dashboard/editor', label: 'Dashboard', icon: 'clipboard' },
+    { to: '/portfolio', label: 'Portfolio', icon: 'film' },
+    { to: '/smart-pricing', label: 'Smart Pricing', icon: 'bulb' },
+    { to: '/wallet', label: 'Wallet', icon: 'wallet' }
+  );
+  if (user) links.push(
+    { to: '/messages', label: 'Messages', icon: 'message' },
+    { to: '/video-scorer', label: 'Video Scorer', icon: 'sparkles' },
+    { to: '/collab', label: 'Collaboration', icon: 'users' },
+    { to: '/subscription', label: 'Go Pro', icon: 'star' }
+  );
+
+  const Logo = ({ onClick }) => (
+    <Link to="/" onClick={onClick} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <img src="/logo192.png" alt="EditHire" style={{ width: 30, height: 30, objectFit: 'contain' }} />
+      <span style={{ fontWeight: 700, fontSize: 18, color: '#F1F0FF' }}>Edit<span style={{ color: '#7C3AED' }}>Hire</span></span>
+    </Link>
+  );
 
   return (
-    <nav style={navStyle}>
-      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-  {/* Logo */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <img src="/logo192.png" alt="EditHire" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-          <span style={{ fontWeight: 700, fontSize: 18, color: '#F1F0FF' }}>Edit<span style={{ color: '#7C3AED' }}>Hire</span></span>
-        </Link>
+    <>
+      {/* Phone top bar */}
+      <header className="topbar">
+        <button className="topbar-btn" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}>
+          <Icon name="menu" size={22} />
+        </button>
+        <Logo />
+      </header>
 
-        {/* Center links */}
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <NavLink to="/browse" active={isActive('/browse')} label="Browse" />
+      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
 
-          {user?.role === 'client' && (
-            <>
-              <NavLink to="/dashboard/client" active={isActive('/dashboard/client')} label="Dashboard" />
-              <NavLink to="/ai-match"active={isActive('/ai-match')} label="AI Match" />
-              <NavLink to="/wallet"active={isActive('/wallet')} label="Wallet" />
-            </>
-          )}
-
-          {user?.role === 'editor' && (
-            <>
-              <NavLink to="/dashboard/editor" active={isActive('/dashboard/editor')} label="Dashboard" />
-              <NavLink to="/portfolio" active={isActive('/portfolio')} label="Portfolio" />
-              <NavLink to="/smart-pricing"active={isActive('/smart-pricing')} label="Pricing" />
-              <NavLink to="/wallet"active={isActive('/wallet')} label="Wallet" />
-            </>
-          )}
-
-          {user && (
-            <>
-              <NavLink to="/messages" active={isActive('/messages')} label="Messages" />
-              <NavLink to="/subscription"active={isActive('/subscription')} label="Pro" />
-              <NavLink to="/video-scorer"active={isActive('/video-scorer')} label="Scorer" />
-              <NavLink to="/collab"active={isActive('/collab')} label="Collab" />
-            </>
-          )}
+      <aside className={`sidebar${open ? ' open' : ''}`} aria-label="Main navigation">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px 18px' }}>
+          <Logo />
+          <button className="topbar-btn sidebar-close" aria-label="Close menu" onClick={() => setOpen(false)}>
+            <Icon name="x" size={20} />
+          </button>
         </div>
 
-        {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+          {links.map(l => (
+            <Link key={l.to + l.label} to={l.to} className={`side-link${isActive(l.to) ? ' active' : ''}`}>
+              <Icon name={l.icon} size={18} />
+              <span>{l.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14, marginTop: 12 }}>
           {user ? (
-            <div style={{ position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-                onClick={() => setTimeout(() => setMenuOpen(m => !m), 0)}>
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px 12px' }}>
                 <img
                   src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                   alt={user.name}
-                  style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid #7C3AED' }}
+                  style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid #7C3AED', flexShrink: 0 }}
                 />
-                <span style={{ fontSize: 14, fontWeight: 500, color: '#F1F0FF' }}>{user.name?.split(' ')[0]}</span>
-              </div>
-
-              {menuOpen && (
-                <div style={{
-                  position: 'absolute', right: 0, top: 48,
-                  background: '#1A1A2E', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 12, padding: 8, width: 200,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-                }} onClick={() => setMenuOpen(false)}>
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 4 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{user.name}</div>
-                    <div style={{ fontSize: 12, color: '#9B9AB8', textTransform: 'capitalize' }}>{user.role}</div>
-                  </div>
-
-                  {user.role === 'client' && (
-                    <>
-                      <MenuItem to="/dashboard/client"label="Dashboard" />
-                      <MenuItem to="/ai-match"label="AI Match" />
-                      <MenuItem to="/wallet"label="Wallet" />
-                    </>
-                  )}
-
-                  {user.role === 'editor' && (
-                    <>
-                      <MenuItem to="/dashboard/editor"label="Dashboard" />
-                      <MenuItem to="/portfolio"label="Portfolio" />
-                      <MenuItem to="/smart-pricing"label="Smart Pricing" />
-                      <MenuItem to="/wallet"label="Wallet" />
-                    </>
-                  )}
-
-                  <MenuItem to="/messages"label="Messages" />
-                  <MenuItem to="/video-scorer"label="Video Scorer" />
-                  <MenuItem to="/collab"label="Collaboration" />
-
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 4, paddingTop: 4 }}>
-                    <button onClick={handleLogout} style={{
-                      width: '100%', background: 'none', border: 'none',
-                      color: '#EF4444', padding: '8px 12px', textAlign: 'left',
-                      cursor: 'pointer', borderRadius: 8, fontSize: 14,
-                      fontFamily: 'DM Sans, sans-serif'
-                    }}>Sign Out</button>
-                  </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#F1F0FF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
+                  <div style={{ fontSize: 12, color: '#9B9AB8', textTransform: 'capitalize' }}>{user.role}</div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link to="/login"><button className="btn-ghost" style={{ padding: '8px 16px' }}>Sign In</button></Link>
-              <Link to="/signup"><button className="btn-primary" style={{ padding: '8px 16px' }}>Get Started</button></Link>
+              </div>
+              <button className="side-link" onClick={handleLogout}
+                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontFamily: 'inherit' }}>
+                <Icon name="logout" size={18} />
+                <span>Sign Out</span>
+              </button>
             </>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 4px' }}>
+              <Link to="/login"><button className="btn-ghost" style={{ width: '100%', padding: '9px 16px' }}>Sign In</button></Link>
+              <Link to="/signup"><button className="btn-primary" style={{ width: '100%', padding: '9px 16px' }}>Get Started</button></Link>
+            </div>
           )}
         </div>
-      </div>
-    </nav>
-  );
-}
-
-function NavLink({ to, label, active }) {
-  return (
-    <Link to={to} style={{ textDecoration: 'none' }}>
-      <span style={{
-        padding: '6px 12px', borderRadius: 8,
-        fontSize: 13, fontWeight: 500,
-        color: active ? '#9F67FF' : '#9B9AB8',
-        background: active ? 'rgba(124,58,237,0.1)' : 'transparent',
-        transition: 'all 0.2s', display: 'block', whiteSpace: 'nowrap'
-      }}>{label}</span>
-    </Link>
-  );
-}
-
-function MenuItem({ to, label }) {
-  return (
-    <Link to={to} style={{ textDecoration: 'none' }}>
-      <div style={{
-        padding: '8px 12px', borderRadius: 8, fontSize: 14,
-        color: '#9B9AB8', cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.1)'; e.currentTarget.style.color = '#9F67FF'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9B9AB8'; }}
-      >{label}</div>
-    </Link>
+      </aside>
+    </>
   );
 }
