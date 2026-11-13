@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
+import Icon from'../components/Icon';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -53,7 +54,7 @@ export default function ForgotPassword() {
 
           {done ? (
             <div style={{ textAlign: 'center', padding: '10px 0' }}>
-              <div style={{ fontSize: 44, marginBottom: 14 }}>📬</div>
+              <div style={{ color: '#9F67FF', marginBottom: 14 }}><Icon name="inbox"size={37} /></div>
               <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Check your inbox</h3>
               <p style={{ color: '#9B9AB8', fontSize: 14, lineHeight: 1.6 }}>
                 If an account exists for <strong style={{ color: '#F1F0FF' }}>{email}</strong>, a password reset link has been sent. It expires in 1 hour.

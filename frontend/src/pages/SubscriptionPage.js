@@ -81,7 +81,7 @@ export default function SubscriptionPage() {
       if (result.state === 'paid') {
         setCurrentPlan(planId);
         if (result.validUntil) setValidUntil(result.validUntil);
-        alert('🎉 Subscription activated successfully!');
+        alert('Subscription activated successfully!');
       } else if (result.state === 'pending') {
         alert('Payment was not completed.');
       } else if (result.state !== 'redirecting') {
@@ -123,7 +123,7 @@ export default function SubscriptionPage() {
               borderRadius: 20, padding: '6px 16px'
             }}>
               <span style={{ color: '#10B981', fontSize: 14 }}>
-                ✅ Active: {currentPlan === 'pro_client' ? 'Pro Client' : 'Pro Editor'}
+                 Active: {currentPlan === 'pro_client' ? 'Pro Client' : 'Pro Editor'}
                 {validUntil && ` (until ${new Date(validUntil).toLocaleDateString()})`}
               </span>
             </div>
@@ -193,7 +193,7 @@ export default function SubscriptionPage() {
                     fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 600,
                     background: 'rgba(16,185,129,0.1)', border: '1px solid #10B981',
                     color: '#10B981', cursor: 'default'
-                  }}>✅ Active</button>
+                  }}>Active</button>
                 ) : (
                   <button onClick={() => handleSubscribe(plan.id)}
                     disabled={loadingPlan === plan.id}

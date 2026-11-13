@@ -50,7 +50,7 @@ const sendOTPEmail = async (email, name, otp) => {
       <div style="text-align: center; margin-bottom: 24px;">
         <h1 style="color: #7C3AED; font-size: 28px;">Edit<span style="color: #06B6D4">Hire</span></h1>
       </div>
-      <h2 style="font-size: 22px; margin-bottom: 8px;">Hi ${name}! 👋</h2>
+      <h2 style="font-size: 22px; margin-bottom: 8px;">Hi ${name}!</h2>
       <p style="color: #9B9AB8; line-height: 1.6;">Use the code below to verify your email and activate your EditHire account.</p>
       <div style="text-align: center; margin: 32px 0;">
         <div style="display: inline-block; background: rgba(124,58,237,0.15); border: 1px solid #7C3AED; border-radius: 12px; padding: 18px 36px;">

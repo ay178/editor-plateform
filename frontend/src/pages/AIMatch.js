@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import Icon from'../components/Icon';
 
 export default function AIMatch() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export default function AIMatch() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+          <div style={{ color: '#9F67FF', marginBottom: 16 }}><Icon name="bot"size={40} /></div>
           <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 8 }}>
             AI <span className="gradient-text">Editor Match</span>
           </h1>
@@ -130,7 +131,7 @@ export default function AIMatch() {
                   <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
                   Finding your perfect match...
                 </span>
-              ) : '🤖 Find My Editor →'}
+              ) : 'Find My Editor →'}
             </button>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
@@ -138,14 +139,14 @@ export default function AIMatch() {
           <div>
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
-                ✨ Top Matches for Your Project
+                 Top Matches for Your Project
               </h2>
               <p style={{ color: '#9B9AB8' }}>Based on your requirements, here are the best editors</p>
             </div>
 
             {results.length === 0 ? (
               <div className="glass" style={{ padding: 40, textAlign: 'center' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>😔</div>
+                <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="search"size={34} /></div>
                 <p style={{ color: '#9B9AB8' }}>No matches found. Try different criteria.</p>
               </div>
             ) : (

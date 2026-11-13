@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 
 const SKILLS = ['video-editing', 'color-grading', 'motion-graphics', 'sound-design', 'thumbnail-design', 'animation', 'photo-editing'];
 
@@ -37,7 +38,7 @@ function HireModal({ editor, onClose }) {
         onClick={e => e.stopPropagation()}>
         {done ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+            <div style={{ color: '#10B981', marginBottom: 16 }}><Icon name="check-circle"size={40} /></div>
             <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Request Sent!</h3>
             <p style={{ color: '#9B9AB8', marginBottom: 24 }}>Your hire request has been sent to {editor.user?.name}.</p>
             <button className="btn-primary" onClick={onClose}>Close</button>
@@ -141,7 +142,7 @@ export default function BrowseEditors() {
 
         {/* Search bar */}
         <div style={{ marginBottom: 24 }}>
-          <input className="input" placeholder="🔍  Search by name, bio, or skill..."
+          <input className="input"placeholder="Search by name, bio, or skill..."
             value={search} onChange={e => setSearch(e.target.value)}
             style={{ maxWidth: 500, fontSize: 15 }} />
         </div>
@@ -200,7 +201,7 @@ export default function BrowseEditors() {
               </div>
             ) : editors.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="search"size={40} /></div>
                 <p style={{ color: '#9B9AB8' }}>No editors found. Try different filters.</p>
               </div>
             ) : (
@@ -246,7 +247,7 @@ function EditorCard({ editor, onHire }) {
       background: 'rgba(6,182,212,0.15)', color: '#06B6D4',
       border: '1px solid rgba(6,182,212,0.3)', borderRadius: 20,
       padding: '2px 8px', fontSize: 11, fontWeight: 600
-    }}>🆕 New to EditHire</span>
+    }}>New to EditHire</span>
   ) : (
     <>
       <Stars n={editor.averageRating} />

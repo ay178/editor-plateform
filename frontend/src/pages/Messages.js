@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 
 export default function Messages() {
   const { user } = useAuth();
@@ -138,7 +139,7 @@ export default function Messages() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0F0F1A' }}>
           {!active ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-              <div style={{ fontSize: 48 }}>💬</div>
+              <div style={{ color: '#9F67FF' }}><Icon name="message"size={40} /></div>
               <p style={{ color: '#9B9AB8' }}>Select a conversation to start chatting</p>
             </div>
           ) : (
@@ -166,7 +167,7 @@ export default function Messages() {
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 8px' }}>
                 {messages.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                    <p style={{ color: '#9B9AB8', fontSize: 14 }}>No messages yet. Say hello! 👋</p>
+                    <p style={{ color: '#9B9AB8', fontSize: 14 }}>No messages yet. Say hello!</p>
                   </div>
                 )}
                 {messages.map((msg, i) => {

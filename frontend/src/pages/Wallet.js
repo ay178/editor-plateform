@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 
 const EMPTY_FORM = { accountHolderName: '', bankName: '', accountNumber: '', confirmAccountNumber: '', ifsc: '' };
 
@@ -109,7 +110,7 @@ export default function Wallet() {
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 30, fontWeight: 700 }}>💰 My Wallet</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 700 }}>My Wallet</h1>
           <p style={{ color: '#9B9AB8', marginTop: 4 }}>Manage your earnings and payments</p>
         </div>
 
@@ -151,7 +152,7 @@ export default function Wallet() {
           borderRadius: 12, padding: '16px 20px', marginBottom: 28,
           display: 'flex', gap: 12, alignItems: 'flex-start'
         }}>
-          <span style={{ fontSize: 20 }}>ℹ️</span>
+          <span style={{ color: '#06B6D4', display: 'inline-flex' }}><Icon name="info"size={20} /></span>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14, color: '#06B6D4', marginBottom: 4 }}>How Escrow Works</div>
             <p style={{ fontSize: 13, color: '#9B9AB8', lineHeight: 1.6 }}>
@@ -166,7 +167,7 @@ export default function Wallet() {
           <>
             <div className="glass" style={{ padding: 24, marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700 }}>🏦 Bank Account</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 700 }}>Bank Account</h3>
                 {bank.hasAccount && !editingBank && (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn-ghost" style={{ padding: '6px 14px', fontSize: 13 }}
@@ -237,7 +238,7 @@ export default function Wallet() {
             </div>
 
             <div className="glass" style={{ padding: 24, marginBottom: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>📤 Withdraw Earnings</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Withdraw Earnings</h3>
               <p style={{ fontSize: 13, color: '#9B9AB8', marginBottom: 16 }}>
                 Available: ₹{wallet?.balance?.toFixed(2) || '0.00'}
                 {bank.hasAccount
@@ -266,7 +267,7 @@ export default function Wallet() {
 
           {!wallet?.transactions?.length ? (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>💳</div>
+              <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="card"size={40} /></div>
               <p style={{ color: '#9B9AB8' }}>No transactions yet</p>
               <p style={{ color: '#5C5B7A', fontSize: 13, marginTop: 4 }}>
                 {isEditor ? 'Complete projects to start earning!' : 'Hire an editor to get started!'}
@@ -292,12 +293,8 @@ export default function Wallet() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                         background: isCredit ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'
                       }}>
-                        {tx.type === 'deposit' ? '💰'
-                          : tx.type === 'escrow_hold' ? '🔒'
-                          : tx.type === 'escrow_release' ? '✅'
-                          : tx.type === 'platform_fee' ? '🏛️'
-                          : tx.type === 'refund' ? '↩️'
-                          : tx.type === 'withdrawal' ? '📤' : '💳'}
+                        <Icon size={18} name={({ deposit: 'wallet', escrow_hold: 'lock', escrow_release: 'check-circle',
+                          platform_fee: 'bank', refund: 'undo', withdrawal: 'upload' })[tx.type] || 'card'} />
                       </div>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600, textTransform: 'capitalize' }}>

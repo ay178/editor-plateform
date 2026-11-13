@@ -37,8 +37,8 @@ export default function Navbar() {
           {user?.role === 'client' && (
             <>
               <NavLink to="/dashboard/client" active={isActive('/dashboard/client')} label="Dashboard" />
-              <NavLink to="/ai-match" active={isActive('/ai-match')} label="🤖 AI Match" />
-              <NavLink to="/wallet" active={isActive('/wallet')} label="💰 Wallet" />
+              <NavLink to="/ai-match"active={isActive('/ai-match')} label="AI Match" />
+              <NavLink to="/wallet"active={isActive('/wallet')} label="Wallet" />
             </>
           )}
 
@@ -46,17 +46,17 @@ export default function Navbar() {
             <>
               <NavLink to="/dashboard/editor" active={isActive('/dashboard/editor')} label="Dashboard" />
               <NavLink to="/portfolio" active={isActive('/portfolio')} label="Portfolio" />
-              <NavLink to="/smart-pricing" active={isActive('/smart-pricing')} label="💡 Pricing" />
-              <NavLink to="/wallet" active={isActive('/wallet')} label="💰 Wallet" />
+              <NavLink to="/smart-pricing"active={isActive('/smart-pricing')} label="Pricing" />
+              <NavLink to="/wallet"active={isActive('/wallet')} label="Wallet" />
             </>
           )}
 
           {user && (
             <>
               <NavLink to="/messages" active={isActive('/messages')} label="Messages" />
-              <NavLink to="/subscription" active={isActive('/subscription')} label="⭐ Pro" />
-              <NavLink to="/video-scorer" active={isActive('/video-scorer')} label="🎬 Scorer" />
-              <NavLink to="/collab" active={isActive('/collab')} label="🤝 Collab" />
+              <NavLink to="/subscription"active={isActive('/subscription')} label="Pro" />
+              <NavLink to="/video-scorer"active={isActive('/video-scorer')} label="Scorer" />
+              <NavLink to="/collab"active={isActive('/collab')} label="Collab" />
             </>
           )}
         </div>
@@ -89,24 +89,24 @@ export default function Navbar() {
 
                   {user.role === 'client' && (
                     <>
-                      <MenuItem to="/dashboard/client" label="📋 Dashboard" />
-                      <MenuItem to="/ai-match" label="🤖 AI Match" />
-                      <MenuItem to="/wallet" label="💰 Wallet" />
+                      <MenuItem to="/dashboard/client"label="Dashboard" />
+                      <MenuItem to="/ai-match"label="AI Match" />
+                      <MenuItem to="/wallet"label="Wallet" />
                     </>
                   )}
 
                   {user.role === 'editor' && (
                     <>
-                      <MenuItem to="/dashboard/editor" label="📋 Dashboard" />
-                      <MenuItem to="/portfolio" label="🎬 Portfolio" />
-                      <MenuItem to="/smart-pricing" label="💡 Smart Pricing" />
-                      <MenuItem to="/wallet" label="💰 Wallet" />
+                      <MenuItem to="/dashboard/editor"label="Dashboard" />
+                      <MenuItem to="/portfolio"label="Portfolio" />
+                      <MenuItem to="/smart-pricing"label="Smart Pricing" />
+                      <MenuItem to="/wallet"label="Wallet" />
                     </>
                   )}
 
-                  <MenuItem to="/messages" label="💬 Messages" />
-                  <MenuItem to="/video-scorer" label="🎬 Video Scorer" />
-                  <MenuItem to="/collab" label="🤝 Collaboration" />
+                  <MenuItem to="/messages"label="Messages" />
+                  <MenuItem to="/video-scorer"label="Video Scorer" />
+                  <MenuItem to="/collab"label="Collaboration" />
 
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 4, paddingTop: 4 }}>
                     <button onClick={handleLogout} style={{
@@ -114,7 +114,7 @@ export default function Navbar() {
                       color: '#EF4444', padding: '8px 12px', textAlign: 'left',
                       cursor: 'pointer', borderRadius: 8, fontSize: 14,
                       fontFamily: 'DM Sans, sans-serif'
-                    }}>🚪 Sign Out</button>
+                    }}>Sign Out</button>
                   </div>
                 </div>
               )}

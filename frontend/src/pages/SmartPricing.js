@@ -34,10 +34,10 @@ export default function SmartPricing() {
         max: Math.round(base * 1.4),
         pricingType: form.pricingType,
         tips: [
-          form.experience > 5 ? '✅ Your experience level commands premium rates' : '💡 As you gain more projects, raise your rates',
-          form.skills.length >= 3 ? '✅ Multiple skills make you more valuable' : '💡 Adding more skills can increase your earning potential',
-          form.software.length >= 3 ? '✅ Proficiency in multiple tools is a plus' : '💡 Learning industry-standard tools increases your value',
-          '💡 Start slightly lower to build reviews, then raise rates',
+          form.experience > 5 ? 'Your experience level commands premium rates' : 'As you gain more projects, raise your rates',
+          form.skills.length >= 3 ? 'Multiple skills make you more valuable' : 'Adding more skills can increase your earning potential',
+          form.software.length >= 3 ? 'Proficiency in multiple tools is a plus' : 'Learning industry-standard tools increases your value',
+          'Start slightly lower to build reviews, then raise rates',
         ]
       });
     } catch {
@@ -52,7 +52,7 @@ export default function SmartPricing() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>💡</div>
+          <div style={{ fontSize: 48, marginBottom: 12 }}></div>
           <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
             Smart <span className="gradient-text">Pricing</span>
           </h1>
@@ -121,7 +121,7 @@ export default function SmartPricing() {
 
           <button className="btn-primary" onClick={getSuggestion} disabled={loading || form.skills.length === 0}
             style={{ width: '100%', justifyContent: 'center', padding: 13, fontSize: 15 }}>
-            {loading ? 'Calculating...' : '💡 Get Smart Pricing →'}
+            {loading ? 'Calculating...' : 'Get Smart Pricing →'}
           </button>
         </div>
 
@@ -153,7 +153,7 @@ export default function SmartPricing() {
             </div>
 
             <div className="glass" style={{ padding: 24 }}>
-              <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>💡 Tips to Maximize Earnings</h4>
+              <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Tips to Maximize Earnings</h4>
               {result.tips.map((tip, i) => (
                 <div key={i} style={{ fontSize: 14, color: '#9B9AB8', marginBottom: 10, lineHeight: 1.5 }}>{tip}</div>
               ))}

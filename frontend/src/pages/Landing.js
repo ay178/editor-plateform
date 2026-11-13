@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 const WORDS = ['YouTube Videos', 'Short Films', 'Brand Ads', 'Reels & TikToks', 'Documentaries'];
 
 export default function Landing() {
@@ -38,7 +39,7 @@ export default function Landing() {
         <div className="container" style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           {/* Badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
-            <div className="chip-cyan">✦ Professional Editing Marketplace</div>
+            <div className="chip-cyan">Professional Editing Marketplace</div>
           </div>
 
           {/* Headline */}
@@ -74,7 +75,7 @@ export default function Landing() {
 
           {/* Stats */}
           <div style={{ display: 'flex', gap: 40, justifyContent: 'center', marginTop: 64, flexWrap: 'wrap' }}>
-            {[['500+', 'Expert Editors'], ['2,000+', 'Projects Done'], ['4.9★', 'Avg Rating'], ['98%', 'Client Satisfaction']].map(([num, label]) => (
+            {[['500+', 'Expert Editors'], ['2,000+', 'Projects Done'], ['4.9/5', 'Avg Rating'], ['98%', 'Client Satisfaction']].map(([num, label]) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 28, fontWeight: 700, color: '#F1F0FF' }}>{num}</div>
                 <div style={{ fontSize: 13, color: '#9B9AB8', marginTop: 2 }}>{label}</div>
@@ -92,12 +93,12 @@ export default function Landing() {
 
           <div className="grid-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
             {[
-              { n: '01', title: 'Browse & Filter', desc: 'Search editors by skill, price, rating, and availability. View portfolios before you decide.', icon: '🔍' },
-              { n: '02', title: 'Send Hire Request', desc: 'Describe your project, set your budget and deadline. Editor reviews and accepts.', icon: '📋' },
-              { n: '03', title: 'Collaborate & Pay', desc: 'Chat in real-time, review progress. Release secure payment when done.', icon: '✅' },
+              { n: '01', title: 'Browse & Filter', desc: 'Search editors by skill, price, rating, and availability. View portfolios before you decide.', icon: 'search' },
+              { n: '02', title: 'Send Hire Request', desc: 'Describe your project, set your budget and deadline. Editor reviews and accepts.', icon: 'clipboard' },
+              { n: '03', title: 'Collaborate & Pay', desc: 'Chat in real-time, review progress. Release secure payment when done.', icon: 'check-circle' },
             ].map(step => (
               <div key={step.n} className="glass" style={{ padding: 32, textAlign: 'center' }}>
-                <div style={{ fontSize: 36, marginBottom: 16 }}>{step.icon}</div>
+                <div style={{ marginBottom: 16, color: '#9F67FF' }}><Icon name={step.icon} size={32} /></div>
                 <div style={{ fontSize: 12, color: '#7C3AED', fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>{step.n}</div>
                 <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 10 }}>{step.title}</h3>
                 <p style={{ color: '#9B9AB8', lineHeight: 1.6, fontSize: 14 }}>{step.desc}</p>

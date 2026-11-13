@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
+import Icon from'../components/Icon';
 
 export default function Collaboration() {
   const { user } = useAuth();
@@ -87,7 +88,7 @@ export default function Collaboration() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700 }}>🎬 Collaboration Room</h1>
+            <h1 style={{ fontSize: 24, fontWeight: 700 }}>Collaboration Room</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: connected ? '#10B981' : '#EF4444' }} />
               <span style={{ fontSize: 12, color: '#9B9AB8' }}>{connected ? 'Connected' : 'Disconnected'}</span>
@@ -109,7 +110,7 @@ export default function Collaboration() {
               <span style={{ fontSize: 12, color: '#9B9AB8', marginLeft: 8 }}>{users.length} online</span>
             </div>
             <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={copyRoomLink}>
-              🔗 Share Room
+               Share Room
             </button>
           </div>
         </div>
@@ -117,9 +118,9 @@ export default function Collaboration() {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>
           {[
-            { id: 'editor', label: '📝 Notes & Brief' },
-            { id: 'comments', label: `💬 Comments (${comments.length})` },
-            { id: 'timeline', label: `⏱ Timeline (${timeline.length})` },
+            { id: 'editor', label: 'Notes & Brief' },
+            { id: 'comments', label: `Comments (${comments.length})` },
+            { id: 'timeline', label: `Timeline (${timeline.length})` },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -140,7 +141,7 @@ export default function Collaboration() {
             <textarea
               value={content}
               onChange={e => updateContent(e.target.value)}
-              placeholder={`📋 Project Brief & Notes\n\nClient: ...\nDeadline: ...\nStyle Reference: ...\n\nRevision Notes:\n- ...\n- ...`}
+              placeholder={`Project Brief & Notes\n\nClient: ...\nDeadline: ...\nStyle Reference: ...\n\nRevision Notes:\n- ...\n- ...`}
               style={{
                 width: '100%', minHeight: 500, padding: 20, borderRadius: 12,
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
@@ -163,7 +164,7 @@ export default function Collaboration() {
 
             {comments.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+                <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="message"size={34} /></div>
                 <p style={{ color: '#9B9AB8' }}>No comments yet. Start the conversation!</p>
               </div>
             ) : (
@@ -197,7 +198,7 @@ export default function Collaboration() {
 
             {timeline.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>⏱</div>
+                <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="clock"size={34} /></div>
                 <p style={{ color: '#9B9AB8' }}>No timeline markers yet. Add timestamps for feedback!</p>
               </div>
             ) : (

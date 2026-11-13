@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import Icon from'../components/Icon';
 
 const CRITERIA = [
-  { key: 'editing', label: 'Editing Quality', icon: '✂️', desc: 'Cuts, transitions, pacing' },
-  { key: 'color', label: 'Color Grading', icon: '🎨', desc: 'Color consistency and mood' },
-  { key: 'audio', label: 'Audio Quality', icon: '🎵', desc: 'Sound mixing and clarity' },
-  { key: 'motion', label: 'Motion Graphics', icon: '✨', desc: 'Animations and effects' },
-  { key: 'story', label: 'Storytelling', icon: '📖', desc: 'Narrative flow and engagement' },
+  { key: 'editing', label: 'Editing Quality', icon: 'scissors', desc: 'Cuts, transitions, pacing' },
+  { key: 'color', label: 'Color Grading', icon: 'palette', desc: 'Color consistency and mood' },
+  { key: 'audio', label: 'Audio Quality', icon: 'music', desc: 'Sound mixing and clarity' },
+  { key: 'motion', label: 'Motion Graphics', icon: 'sparkles', desc: 'Animations and effects' },
+  { key: 'story', label: 'Storytelling', icon: 'book', desc: 'Narrative flow and engagement' },
 ];
 
 export default function VideoScorer() {
@@ -50,7 +51,7 @@ export default function VideoScorer() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
+          <div style={{ color: '#9F67FF', marginBottom: 12 }}><Icon name="film"size={40} /></div>
           <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
             Video <span className="gradient-text">Scorer</span>
           </h1>
@@ -64,13 +65,13 @@ export default function VideoScorer() {
             background: !manualMode ? 'rgba(124,58,237,0.15)' : 'transparent',
             border: !manualMode ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
             color: !manualMode ? '#9F67FF' : '#9B9AB8',
-          }}>🤖 Auto Analyze</button>
+          }}>Auto Analyze</button>
           <button onClick={() => setManualMode(true)} style={{
             padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 14,
             background: manualMode ? 'rgba(124,58,237,0.15)' : 'transparent',
             border: manualMode ? '1px solid #7C3AED' : '1px solid rgba(255,255,255,0.08)',
             color: manualMode ? '#9F67FF' : '#9B9AB8',
-          }}>✏️ Manual Score</button>
+          }}>Manual Score</button>
         </div>
 
         <div className="glass" style={{ padding: 32, marginBottom: 24 }}>
@@ -96,7 +97,7 @@ export default function VideoScorer() {
                 <div key={c.key} style={{ marginBottom: 20 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 18 }}>{c.icon}</span>
+                      <Icon name={c.icon} size={18} />
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600 }}>{c.label}</div>
                         <div style={{ fontSize: 12, color: '#9B9AB8' }}>{c.desc}</div>
@@ -124,7 +125,7 @@ export default function VideoScorer() {
         {/* Loading */}
         {loading && (
           <div className="glass" style={{ padding: 32, textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12, animation: 'spin 2s linear infinite', display: 'inline-block' }}>🎬</div>
+            <div style={{ marginBottom: 12, color: '#9F67FF', animation: 'spin 2s linear infinite', display: 'inline-block' }}><Icon name="film"size={36} /></div>
             <p style={{ color: '#9B9AB8' }}>Analyzing video quality...</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
@@ -155,7 +156,7 @@ export default function VideoScorer() {
                   <div key={c.key} style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span>{c.icon}</span>
+                        <Icon name={c.icon} size={14} />
                         <span style={{ fontSize: 14, fontWeight: 500 }}>{c.label}</span>
                       </div>
                       <span style={{ fontSize: 14, fontWeight: 700, color }}>{score}/100</span>

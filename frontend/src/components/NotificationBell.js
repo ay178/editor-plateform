@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import API from '../utils/api';
+import Icon from'./Icon';
 
 const NotificationBell = () => {
   const { user } = useAuth();
@@ -77,14 +78,15 @@ const NotificationBell = () => {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'hire_request': return '📋';
-      case 'request_accepted': return '✅';
-      case 'request_rejected': return '❌';
-      case 'schedule_proposal': return '📅';
-      case 'schedule_accepted': return '🎉';
-      case 'schedule_rejected': return '❌';
-      case 'request_completed': return '🏆';
-      default: return '🔔';
+      case'hire_request': return'clipboard';
+      case'request_accepted': return'check-circle';
+      case'request_rejected': return'x-circle';
+      case'schedule_proposal': return'calendar';
+      case'schedule_accepted': return'check-circle';
+      case'schedule_rejected': return'x-circle';
+      case'request_completed': return'award';
+      case'project_update': return'film';
+      default: return'bell';
     }
   };
 
@@ -163,7 +165,7 @@ const NotificationBell = () => {
               <div style={{
                 textAlign: 'center', padding: '40px 20px', color: '#94A3B8'
               }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>🔔</div>
+                <div style={{ marginBottom: 8 }}><Icon name="bell"size={30} /></div>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>
                   No notifications yet
                 </div>
@@ -185,7 +187,7 @@ const NotificationBell = () => {
                     display: 'flex', gap: 10, alignItems: 'flex-start'
                   }}>
                     <div style={{ fontSize: 22, flexShrink: 0 }}>
-                      {getIcon(notif.type)}
+                      <Icon name={getIcon(notif.type)} size={18} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
@@ -201,7 +203,7 @@ const NotificationBell = () => {
                           borderRadius: 8, padding: '3px 10px',
                           fontSize: 12, fontWeight: 600
                         }}>
-                          📅 {new Date(notif.scheduledDate)
+                          <Icon name="calendar" size={12} style={{ marginRight: 6, verticalAlign: '-2px' }} />{new Date(notif.scheduledDate)
                             .toLocaleDateString('en-US', {
                               day: 'numeric', month: 'long', year: 'numeric'
                             })}
