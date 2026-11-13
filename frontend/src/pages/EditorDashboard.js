@@ -17,33 +17,36 @@ export default function EditorDashboard() {
   const [loading, setLoading]   = useState(true);
   const [tab, setTab]           = useState('requests');
   const [reqFilter, setReqFilter] = useState('all');
-  const [profileForm, setProfileForm] = useState({});
+  const [profileForm, setProfileForm] = useState({
+    bio: '', price: '', pricingType: 'per-project', experience: '', availability: true,
+    location: '', skills: [], software: '', responseTime: 'Within 24 hours',
+  });
+  const [profileError, setProfileError] = useState('');
   const [saving, setSaving]     = useState(false);
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     if (!user) return navigate('/login');
     if (user.role !== 'editor') return navigate('/dashboard/client');
-    Promise.all([
-      api.get('/hire'),
-      api.get('/editors/profile/me'),
-      api.get('/payment/wallet').catch(() => null),
-    ]).then(([hRes, pRes, wRes]) => {
-      setRequests(hRes.data);
-      setProfile(pRes.data);
-      if (wRes) setWallet(wRes.data);
+    // Each request is handled on its own, so one failing call (e.g. profile) can no longer
+    // blank the whole dashboard or leave the edit form without data.
+    const hire = api.get('/hire').then(r => setRequests(r.data)).catch(() => {});
+    const wal = api.get('/payment/wallet').then(r => setWallet(r.data)).catch(() => {});
+    const prof = api.get('/editors/profile/me').then(r => {
+      setProfile(r.data);
       setProfileForm({
-        bio: pRes.data.bio || '',
-        price: pRes.data.price || '',
-        pricingType: pRes.data.pricingType || 'per-project',
-        experience: pRes.data.experience || '',
-        availability: pRes.data.availability ?? true,
-        location: pRes.data.location || '',
-        skills: pRes.data.skills || [],
-        software: (pRes.data.software || []).join(', '),
-        responseTime: pRes.data.responseTime || 'Within 24 hours',
+        bio: r.data.bio || '',
+        price: r.data.price ?? '',
+        pricingType: r.data.pricingType || 'per-project',
+        experience: r.data.experience ?? '',
+        availability: r.data.availability ?? true,
+        location: r.data.location || '',
+        skills: r.data.skills || [],
+        software: (r.data.software || []).join(', '),
+        responseTime: r.data.responseTime || 'Within 24 hours',
       });
-    }).finally(() => setLoading(false));
+    }).catch(() => setProfileError('Could not load your profile. Please refresh the page.'));
+    Promise.all([hire, wal, prof]).finally(() => setLoading(false));
   }, [user]);
 
   const updateStatus = async (id, status) => {
@@ -178,11 +181,14 @@ export default function EditorDashboard() {
                   )}
                   <button className={editMode ? 'btn-primary' : 'btn-ghost'}
                     style={{ padding: '8px 16px', fontSize: 13 }}
+                    disabled={!profile && !editMode}
                     onClick={editMode ? saveProfile : () => setEditMode(true)}>
                     {saving ? 'Saving...' : editMode ? 'Save Changes' : 'Edit Profile'}
                   </button>
                 </div>
               </div>
+
+              {profileError && <p style={{ color: '#EF4444', fontSize: 13, marginBottom: 16 }}>{profileError}</p>}
 
               {/* Avatar row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>

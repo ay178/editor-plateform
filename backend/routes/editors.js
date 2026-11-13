@@ -87,11 +87,15 @@ editors = editors.filter(e => e.user);
 });
 
 // GET /api/editors/profile/me
+// Creates an empty profile on first use, so editors whose profile record is missing
+// (older accounts, interrupted signups) can still open and edit it.
 router.get('/profile/me', auth, requireRole('editor'), async (req, res) => {
   try {
-    const profile = await EditorProfile.findOne({ user: req.user._id })
-      .populate('user', 'name email avatar');
-    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    const profile = await EditorProfile.findOneAndUpdate(
+      { user: req.user._id },
+      { $setOnInsert: { user: req.user._id } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).populate('user', 'name email avatar');
     res.json(profile);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -131,10 +135,32 @@ router.get('/:userId', async (req, res) => {
 // PUT /api/editors/profile
 router.put('/profile', auth, requireRole('editor'), async (req, res) => {
   try {
+    // Only these fields may be edited. (Ratings, review counts, completed projects and
+    // the owning user are set by the server and must never come from the request body.)
+    const b = req.body || {};
+    const update = {};
+    if (b.bio !== undefined) update.bio = String(b.bio).slice(0, 2000);
+    if (b.location !== undefined) update.location = String(b.location).slice(0, 100);
+    if (b.responseTime !== undefined) update.responseTime = String(b.responseTime).slice(0, 50);
+    if (['hourly', 'per-project'].includes(b.pricingType)) update.pricingType = b.pricingType;
+    if (b.availability !== undefined) update.availability = !!b.availability;
+    if (b.price !== undefined) {
+      const price = Number(b.price);
+      if (!Number.isFinite(price) || price < 0) return res.status(400).json({ message: 'Price must be a positive number' });
+      update.price = price;
+    }
+    if (b.experience !== undefined) {
+      const exp = Number(b.experience);
+      if (!Number.isFinite(exp) || exp < 0 || exp > 80) return res.status(400).json({ message: 'Experience must be between 0 and 80 years' });
+      update.experience = exp;
+    }
+    if (Array.isArray(b.skills)) update.skills = b.skills.map(String);
+    if (Array.isArray(b.software)) update.software = b.software.map(s => String(s).trim().slice(0, 50)).filter(Boolean).slice(0, 30);
+
     const profile = await EditorProfile.findOneAndUpdate(
       { user: req.user._id },
-      { $set: req.body },
-      { new: true }
+      { $set: update, $setOnInsert: { user: req.user._id } },
+      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
     ).populate('user', 'name email avatar');
 
     // Invalidate this editor's specific cache
@@ -146,7 +172,7 @@ router.put('/profile', auth, requireRole('editor'), async (req, res) => {
 
     res.json(profile);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.name === 'ValidationError' ? 400 : 500).json({ message: err.message });
   }
 });
 
