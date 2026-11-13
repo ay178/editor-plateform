@@ -16,9 +16,13 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpiry: { type: Date },
   authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
   googleId: { type: String, default: null },
+  // Mobile number — Cashfree requires one on every order; collected at first checkout
+  phone: { type: String, default: '' },
   subscription: {
     plan: { type: String, enum: ['free', 'pro_client', 'pro_editor'], default: 'free' },
     validUntil: { type: Date, default: null },
+    cashfreeOrderId: { type: String, default: null },
+    // legacy: kept so subscriptions bought through Razorpay keep their reference
     razorpaySubscriptionId: { type: String, default: null }
   },
 });

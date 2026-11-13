@@ -331,6 +331,36 @@ participants (ref[]), messages[{ sender, receiver, content, read }], lastMessage
 
 ---
 
+## Payments (Cashfree)
+
+Payments run on [Cashfree Payment Gateway](https://www.cashfree.com/docs). Add these to `backend/.env`:
+
+```env
+CASHFREE_APP_ID=your_app_id
+CASHFREE_SECRET_KEY=your_secret_key
+CASHFREE_ENV=sandbox          # "production" when live
+CLIENT_URL=http://localhost:3000   # used for the payment return_url
+# optional
+CASHFREE_API_VERSION=2025-01-01
+CASHFREE_NOTIFY_URL=          # per-order webhook URL (otherwise the dashboard one is used)
+```
+
+**Webhook:** in the Cashfree dashboard (Developers → Webhooks) add
+`https://<your-backend>/api/payment/webhook`. It is the safety net for customers who pay and
+close the tab before the browser confirms. Requests are authenticated with Cashfree's HMAC
+signature, and the order status is re-fetched from Cashfree before anything is fulfilled.
+
+**Flow:** the server prices the order and creates it (`POST /api/payment/create-order`,
+`POST /api/subscription/create-order`) → the browser opens Cashfree checkout with the returned
+`paymentSessionId` → the browser calls `POST /api/payment/verify` with the `orderId` → the server
+asks Cashfree for the real status, checks the amount, and fulfils the order exactly once
+(the webhook and `/verify` share the same idempotent settlement). Orders are tracked in the
+`CashfreeOrder` collection. Amounts are in rupees.
+
+Cashfree requires a mobile number on every order; users are asked for it once at first checkout.
+
+---
+
 ## Production Deployment
 
 ### Backend (Railway / Render / Heroku)
