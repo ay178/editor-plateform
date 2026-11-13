@@ -27,6 +27,8 @@ const io = new Server(server, {
   }
 });
 
+app.set('io', io);
+
 // ── Create uploads folder if not exists ──
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
@@ -90,6 +92,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/bank', require('./routes/bank'));
+app.use('/api/tracking', require('./routes/tracking'));
 app.use('/api/project-files', require('./routes/projectfiles'));
 
 // ── Health Check ──
@@ -102,6 +105,7 @@ const onlineUsers = new Map();
 const collaborationRooms = new Map();
 
 io.on('connection', (socket) => {
+  require('./sockets/tracking')(io, socket);
 
   socket.on('user:join', (userId) => {
     onlineUsers.set(userId, socket.id);

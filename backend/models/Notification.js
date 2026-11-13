@@ -24,7 +24,8 @@ const notificationSchema = new mongoose.Schema({
       'schedule_proposal',
       'schedule_accepted',
       'schedule_rejected',
-      'request_completed'
+      'request_completed',
+      'project_update'
     ], 
     required: true 
   },
