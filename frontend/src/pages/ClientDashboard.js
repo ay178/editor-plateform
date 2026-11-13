@@ -104,6 +104,8 @@ export default function ClientDashboard() {
 }
 
 export function RequestCard({ req, role, onCancel, onComplete, onReview, onMessage, onAccept, onReject }) {
+  const navigate = useNavigate();
+  const trackable = ['accepted', 'scheduled', 'completed'].includes(req.status);
   const other = role === 'client' ? req.editor : req.client;
   return (
     <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -132,6 +134,9 @@ export function RequestCard({ req, role, onCancel, onComplete, onReview, onMessa
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
           {onMessage && (
             <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={onMessage}>💬 Chat</button>
+          )}
+          {trackable && (
+            <button className="btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => navigate(`/project/${req._id}`)}>📍 Track{req.tracking?.progress ? ` · ${req.tracking.progress}%` : ''}</button>
           )}
           {role === 'editor' && req.status === 'pending' && (
             <>

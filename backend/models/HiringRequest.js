@@ -56,6 +56,24 @@ const hiringRequestSchema = new mongoose.Schema({
     ],
     default: 'unpaid'
   },
+  // Live project tracking — used once the editor has accepted (see routes/tracking.js)
+  tracking: {
+    stage: {
+      type: String,
+      enum: ['accepted', 'footage_received', 'rough_cut', 'fine_cut', 'color_audio', 'review', 'delivered'],
+      default: 'accepted'
+    },
+    progress: { type: Number, min: 0, max: 100, default: 0 },
+    updatedAt: { type: Date },
+    updates: [{
+      kind: { type: String, enum: ['system', 'update'], default: 'update' },
+      stage: String,
+      progress: Number,
+      note: { type: String, maxlength: 500 },
+      by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      createdAt: { type: Date, default: Date.now }
+    }]
+  },
   createdAt: {
     type: Date,
     default: Date.now

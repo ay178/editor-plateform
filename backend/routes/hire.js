@@ -3,6 +3,7 @@ const router = express.Router();
 const HiringRequest = require('../models/HiringRequest');
 const EditorProfile = require('../models/EditorProfile');
 const { auth, requireRole } = require('../middleware/auth');
+const { addSystemEntry } = require('../utils/tracking');
 
 // POST /api/hire - Client sends hire request
 router.post('/', auth, requireRole('client'), async (req, res) => {
@@ -32,6 +33,7 @@ router.get('/', auth, async (req, res) => {
       : { editor: req.user._id };
 
     const requests = await HiringRequest.find(query)
+      .select('-tracking.updates')
       .populate('client', 'name email avatar')
       .populate('editor', 'name email avatar')
       .sort({ createdAt: -1 });
@@ -63,6 +65,15 @@ router.patch('/:id/status', auth, async (req, res) => {
 
     request.status = status;
     await request.save();
+
+    // Live tracking: starts when the editor accepts, finishes when the client completes.
+    const io = req.app.get('io');
+    if (status === 'accepted')
+      await addSystemEntry(io, request._id, 'Editor accepted the project', {
+        'tracking.stage': 'accepted', 'tracking.progress': 0 });
+    if (status === 'completed')
+      await addSystemEntry(io, request._id, 'Client marked the project as completed', {
+        'tracking.stage': 'delivered', 'tracking.progress': 100 });
 
     if (status === 'completed') {
       await EditorProfile.findOneAndUpdate(
